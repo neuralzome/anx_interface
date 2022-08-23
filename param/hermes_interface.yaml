@@ -1,0 +1,64 @@
+subscribe_asset_port: 10000
+start_asset_port: 10001
+stop_asset_port: 10002
+asset_state_port: 10003
+
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Imu.html
+imu:
+  - name: "imu"
+    select:
+      id: "A4e2r"
+      fps: 10 
+    covariance:
+      orientation_covariance_diagonal: [0.05, 0.004, 0.003]
+      angular_velocity_covariance_diagonal: [0.05, 0.004, 0.003]
+      linear_acceleration_covariance_diagonal: [0.05, 0.004, 0.003]
+
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatFix.html
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatStatus.html
+gnss:
+  - name: "gnss"
+    select:
+      id: "A4e2r"
+      fps: 10 
+    
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CameraInfo.html
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CompressedImage.html
+cam:
+  - name: "arducam0"
+    select:
+      id: "sknnc9ecs"
+      stream:
+        fps: 20
+        width: 1280
+        hight: 720
+        pixel_format: "mjpeg"
+      compression_quality: 80
+    camera_info_url: "file://home/ubuntu/.ros/flo/arducam0.yaml"
+  - name: "arducam1"
+    select:
+      id: "sknnc9ecs"
+      stream:
+        fps: 20
+        width: 1280
+        hight: 720
+        pixel_format: "mjpeg"
+      compression_quality: 80
+    camera_info_url: "file://home/ubuntu/.ros/flo/arducam1.yaml"
+
+# http://docs.ros.org/en/melodic/api/std_msgs/html/msg/String.html
+speaker:
+  - name: "speaker"
+    select:
+      id: "sde4gg1"
+      language: "english"
+      voice: "male_us"
+
+usb_serial:
+  - base_drive:
+      left_wheel_joint: "J0"
+      right_wheel_joint: "J1"
+    select:
+      id: "sdjnk3j4"
+      baud: 115200
+      message_separator: "\n"
