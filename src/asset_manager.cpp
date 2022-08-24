@@ -1,7 +1,7 @@
 #include "hermes_interface/asset_manager.h"
 
-AssetManager::AssetManager()
-    : sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
+AssetManager::AssetManager():
+    sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_state_socket_(start_asset_state_ctx_, zmq::socket_type::req),
     stop_asset_state_socket_(stop_asset_state_ctx_, zmq::socket_type::req),
@@ -77,6 +77,12 @@ bool AssetManager::Subscribe(bool subscribe){
   zmq::message_t msg_res;
   this->sub_asset_state_socket_.recv(msg_res);
   
-  nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-  return msg_res_json["success"] == subscribe;
+  try{
+    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+    return msg_res_json["success"] == subscribe;
+  }catch (int err){
+    ROS_ERROR("Invalid msg received!");
+    ROS_ERROR("msg: %s", msg_res.to_string().c_str());
+    return false;
+  }
 }
