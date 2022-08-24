@@ -16,6 +16,7 @@ class AssetManager{
 public:
   AssetManager();
   void Start();
+  void Stop();
 private:
   void AssetStateThread();
   bool Subscribe(bool subscribe);
@@ -39,4 +40,7 @@ private:
                start_asset_port_,
                stop_asset_port_,
                asset_state_port_;
+  std::string hermes_ip_;
+
+  bool subscribed_;
 };
