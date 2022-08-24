@@ -1,12 +1,10 @@
-#include <ros/ros.h>
-#include "hermes_interface/asset_manager.h"
+#include "hermes_interface/hermes_interface.h"
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "hermes_interface");
-  ros::NodeHandle nh;
+  ros::init(argc, argv, "hermes_interface", ros::init_options::NoSigintHandler);
 
-  AssetManager asset_manager;
-  asset_manager.Start();
+  HermesInterface* hermes_interface_ptr = HermesInterface::GetInstance();
+  hermes_interface_ptr->Start();
 
   ros::spin();
   return 0;

@@ -26,6 +26,7 @@ include_directories(
 add_executable(
     hermes_interface
     src/hermes_interface_node.cpp
+    src/hermes_interface.cpp
     src/asset_manager.cpp
 )
 
