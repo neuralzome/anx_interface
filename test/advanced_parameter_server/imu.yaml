@@ -1,0 +1,24 @@
+subscribe_asset_port: 10000
+start_asset_port: 10001
+stop_asset_port: 10002
+asset_state_port: 10003
+port_pool_range: [10004, 10500]
+
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Imu.html
+imu:
+  - name: "imu1"
+    select:
+      id: "A4e2r"
+      fps: 10 
+    covariance:
+      orientation_covariance_diagonal: [0.05, 0.004, 0.003]
+      angular_velocity_covariance_diagonal: [0.05, 0.004, 0.003]
+      linear_acceleration_covariance_diagonal: [0.05, 0.004, 0.003]
+  - name: "imu2"
+    select:
+      id: "A4x2r"
+      fps: 10 
+    covariance:
+      orientation_covariance_diagonal: [0.05, 0.004, 0.003]
+      angular_velocity_covariance_diagonal: [0.05, 0.004, 0.003]
+      linear_acceleration_covariance_diagonal: [0.05, 0.004, 0.003]
