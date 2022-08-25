@@ -39,12 +39,27 @@ target_link_libraries(
   nlohmann_json::nlohmann_json
 )
 
-add_executable(
-  advanced_parameter_server
-  test/advanced_parameter_server/advanced_parameter_server.cpp
-)
+option(BUILD_TESTS "Build tests" OFF) #OFF by default
 
-target_link_libraries(
-  advanced_parameter_server
-  ${catkin_LIBRARIES}
-)
+if(BUILD_TESTS)
+  add_executable(
+    advanced_parameter_server
+    test/advanced_parameter_server/advanced_parameter_server.cpp
+  )
+
+  target_link_libraries(
+    advanced_parameter_server
+    ${catkin_LIBRARIES}
+  )
+
+  add_executable(
+    json_parsing
+    test/json_parsing/json_parsing.cpp
+  )
+
+  target_link_libraries(
+    json_parsing
+    ${catkin_LIBRARIES}
+    nlohmann_json::nlohmann_json
+  )
+endif()
