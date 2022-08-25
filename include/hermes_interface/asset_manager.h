@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ros/node_handle.h"
 #include <memory>
 #include <thread>
 #include <string>
+#include <vector>
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
@@ -12,11 +12,17 @@
 
 #include <ros/ros.h>
 
-class AssetManager{
+#include "hermes_interface/asset_manager_interface.h"
+#include "hermes_interface/imu_manager.h"
+
+class AssetManager : public AssetManagerInterface{
 public:
   AssetManager();
-  void Start();
-  void Stop();
+  int GetFreePort() override;
+  void Start() override;
+  void Stop() override;
+  bool StartAsset(nlohmann::json msg) override;
+  bool StopAsset(nlohmann::json msg) override;
 private:
   void AssetStateThread();
   bool Subscribe(bool subscribe);
@@ -30,11 +36,11 @@ private:
   zmq::socket_t asset_state_socket_;
   std::unique_ptr<std::thread> asset_state_thread_;
 
-  zmq::context_t start_asset_state_ctx_;
-  zmq::socket_t start_asset_state_socket_;
+  zmq::context_t start_asset_ctx_;
+  zmq::socket_t start_asset_socket_;
 
-  zmq::context_t stop_asset_state_ctx_;
-  zmq::socket_t stop_asset_state_socket_;
+  zmq::context_t stop_asset_ctx_;
+  zmq::socket_t stop_asset_socket_;
 
   int subscribe_asset_port_,
                start_asset_port_,
@@ -43,4 +49,7 @@ private:
   std::string hermes_ip_;
 
   bool subscribed_;
+  std::vector<int> port_pool_;
+
+  ImuManager imu_manager_;
 };
