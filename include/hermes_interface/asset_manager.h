@@ -4,6 +4,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <exception>
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>

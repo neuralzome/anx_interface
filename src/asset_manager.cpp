@@ -1,4 +1,5 @@
 #include "hermes_interface/asset_manager.h"
+#include "hermes_interface/hermes_interface.h"
 #include "hermes_interface/imu_manager.h"
 
 AssetManager::AssetManager():
@@ -13,7 +14,7 @@ AssetManager::AssetManager():
 
   nh_private.getParam("hermes_ip", this->hermes_ip_);
   nh_private.getParam("subscribe_asset_port", this->subscribe_asset_port_);
-  nh_private.getParam("start_asset_port", this->stop_asset_port_);
+  nh_private.getParam("start_asset_port", this->start_asset_port_);
   nh_private.getParam("stop_asset_port", this->stop_asset_port_);
   nh_private.getParam("asset_state_port", this->asset_state_port_);
 
@@ -115,13 +116,13 @@ void AssetManager::AssetStateThread(){
     zmq::message_t msg;
     this->asset_state_socket_.recv(msg);
 
-    /* ROS_INFO(msg.to_string().c_str()); // Debug */
+    ROS_INFO(msg.to_string().c_str()); // Debug
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
       this->imu_manager_.OnStateChange(msg_json["imu"]);
-    }catch (int err){
+    }catch (std::exception& e){
       ROS_ERROR("Invalid msg received!");
-      ROS_ERROR("msg: %s", msg.to_string().c_str());
+      ROS_ERROR("msg [AssetStateThread]: %s", msg.to_string().c_str());
     }
   }
 }
@@ -139,10 +140,13 @@ bool AssetManager::Subscribe(bool subscribe){
   
   try{
     nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+    if(!msg_res_json["success"]){
+      ROS_INFO(msg_res_json["message"].dump().c_str());
+    }
     return msg_res_json["success"];
-  }catch (int err){
+  }catch (std::exception& e){
     ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg: %s", msg_res.to_string().c_str());
+    ROS_ERROR("msg [Subscribe]: %s", msg_res.to_string().c_str());
     return false;
   }
 }
@@ -151,15 +155,18 @@ bool AssetManager::StartAsset(nlohmann::json msg){
   this->start_asset_socket_.send(zmq::buffer(msg.dump()), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
-  this->asset_state_socket_.recv(msg_res);
+  this->start_asset_socket_.recv(msg_res);
   /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
   
   try{
     nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+    if(!msg_res_json["success"]){
+      ROS_INFO(msg_res_json["message"].dump().c_str());
+    }
     return msg_res_json["success"];
-  }catch (int err){
+  }catch (std::exception& e){
     ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg: %s", msg_res.to_string().c_str());
+    ROS_ERROR("msg [StartAsset]: %s", msg_res.to_string().c_str());
     return false;
   }
 }
@@ -168,15 +175,18 @@ bool AssetManager::StopAsset(nlohmann::json msg){
   this->stop_asset_socket_.send(zmq::buffer(msg.dump()), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
-  this->asset_state_socket_.recv(msg_res);
+  this->stop_asset_socket_.recv(msg_res);
   /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
   
   try{
     nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+    if(!msg_res_json["success"]){
+      ROS_INFO(msg_res_json["message"].dump().c_str());
+    }
     return msg_res_json["success"];
-  }catch (int err){
+  }catch (std::exception& e){
     ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg: %s", msg_res.to_string().c_str());
+    ROS_ERROR("msg [StopAsset]: %s", msg_res.to_string().c_str());
     return false;
   }
 }

@@ -8,10 +8,10 @@ port_pool_range: [10004, 10500]
 
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Imu.html
 imu:
-  - name: "imu1"
+  - name: "imu0"
     select:
-      id: "A4e2r"
-      fps: 10 
+      id: "in72e"
+      fps: 30
     covariance:
       orientation_covariance_diagonal: [0.05, 0.004, 0.003]
       angular_velocity_covariance_diagonal: [0.05, 0.004, 0.003]
