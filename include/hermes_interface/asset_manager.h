@@ -15,6 +15,7 @@
 
 #include "hermes_interface/asset_manager_interface.h"
 #include "hermes_interface/imu_manager.h"
+#include "hermes_interface/usb_serial_manager.h"
 
 class AssetManager : public AssetManagerInterface{
 public:
@@ -53,4 +54,5 @@ private:
   std::vector<int> port_pool_;
 
   ImuManager imu_manager_;
+  UsbSerialManager usb_serial_manager_;
 };

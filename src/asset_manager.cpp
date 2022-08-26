@@ -1,9 +1,11 @@
 #include "hermes_interface/asset_manager.h"
 #include "hermes_interface/hermes_interface.h"
 #include "hermes_interface/imu_manager.h"
+#include "hermes_interface/usb_serial_manager.h"
 
 AssetManager::AssetManager():
     imu_manager_(this),
+    usb_serial_manager_(this),
     sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
@@ -68,6 +70,7 @@ AssetManager::AssetManager():
 void AssetManager::Start(){
   // Start Assets
   this->imu_manager_.Start();
+  this->usb_serial_manager_.Start();
 
   // Start listning to asset stream
   this->asset_state_thread_ = std::make_unique<std::thread>(
@@ -120,6 +123,7 @@ void AssetManager::AssetStateThread(){
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
       this->imu_manager_.OnStateChange(msg_json["imu"]);
+      this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
     }catch (std::exception& e){
       ROS_ERROR("Invalid msg received!");
       ROS_ERROR("msg [AssetStateThread]: %s", msg.to_string().c_str());

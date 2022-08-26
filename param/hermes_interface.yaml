@@ -1,4 +1,5 @@
-hermes_ip: "192.168.43.1"
+# hermes_ip: "192.168.43.1"
+hermes_ip: "192.168.1.41"
 
 subscribe_asset_port: 10000
 start_asset_port: 10001
@@ -58,10 +59,8 @@ speaker:
       voice: "male_us"
 
 usb_serial:
-  - base_drive:
-      left_wheel_joint: "J0"
-      right_wheel_joint: "J1"
+  - name: "arduino"
     select:
       id: "sdjnk3j4"
       baud: 115200
-      message_separator: "\n"
+      delimiter: "\n"

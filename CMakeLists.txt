@@ -29,7 +29,7 @@ add_executable(
   src/hermes_interface.cpp
   src/asset_manager.cpp
   src/imu_manager.cpp
-
+  src/usb_serial_manager.cpp
 )
 
 target_link_libraries(

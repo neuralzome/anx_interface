@@ -17,9 +17,6 @@
 
 #include <nlohmann/json.hpp>
 
-/*
-   * Tasks: Subscribe to array of imu streams and publishes corresponding imu ros msgs.
-*/
 class ImuManager{
 public:
   struct Imu{
