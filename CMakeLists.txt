@@ -6,6 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  sensor_msgs
 )
 
 find_package(cppzmq)
@@ -16,6 +17,7 @@ catkin_package(
     include
   CATKIN_DEPENDS
     roscpp
+    sensor_msgs
 )
 
 include_directories(

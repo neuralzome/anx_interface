@@ -8,9 +8,11 @@
 #include <algorithm>
 
 #include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
 #include "hermes_interface/asset_manager_interface.h"
+#include "ros/node_handle.h"
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
@@ -38,12 +40,16 @@ public:
     std::unique_ptr<zmq::context_t> ctx_ptr;
     std::unique_ptr<zmq::socket_t> socket_ptr;
     std::unique_ptr<std::thread> thread_ptr;
+
+    int seq = 0;
+    ros::Publisher publisher;
   };
 
   ImuManager(AssetManagerInterface* asset_manager);
   void Start();
   void OnStateChange(nlohmann::json state);
 private:
+  ros::NodeHandle nh_;
   void ImuThread(Imu* imu);
   bool IsPresent(Imu& imu, nlohmann::json& state);
   AssetManagerInterface* asset_manager_;
