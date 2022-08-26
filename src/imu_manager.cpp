@@ -1,5 +1,4 @@
 #include "hermes_interface/imu_manager.h"
-#include <string>
 
 ImuManager::ImuManager(AssetManagerInterface* asset_manager){
   // Save pointer to asset_manager 

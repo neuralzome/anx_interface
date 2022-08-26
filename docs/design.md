@@ -1,11 +1,17 @@
 ## Architecture
 
 * AssetManager
-  + Job: Maintains connection with hermies app and make sure assets requisted is ready to use.
+  + Maintains connection with hermies app.
+  + Update assets about state change.
+  + Accept request assets to start and stop stream.
 * ImuManager
+  + Ensure streams requisted is streaming if available.
 * GnssManager
+  + Ensure streams requisted is streaming if available.
 * SpeakerManager
+  + Ensure streams requisted is streaming if available.
 * CameraManager
+  + Ensure streams requisted is streaming if available.
 
 ## Sequence
 
