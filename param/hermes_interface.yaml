@@ -1,5 +1,5 @@
 # hermes_ip: "192.168.43.1"
-hermes_ip: "192.168.1.41"
+hermes_ip: "192.168.1.39"
 
 subscribe_asset_port: 10000
 start_asset_port: 10001
@@ -28,7 +28,7 @@ gnss:
     
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CameraInfo.html
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CompressedImage.html
-cam:
+camera:
   - name: "arducam0"
     select:
       id: "sknnc9ecs"
@@ -41,7 +41,7 @@ cam:
     camera_info_url: "file://home/ubuntu/.ros/flo/arducam0.yaml"
   - name: "arducam1"
     select:
-      id: "sknnc9ecs"
+      id: "sknne2ecs"
       stream:
         fps: 20
         width: 1280

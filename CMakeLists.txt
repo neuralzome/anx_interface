@@ -30,6 +30,7 @@ add_executable(
   src/asset_manager.cpp
   src/imu_manager.cpp
   src/usb_serial_manager.cpp
+  src/camera_manager.cpp
 )
 
 target_link_libraries(
