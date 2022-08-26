@@ -59,8 +59,13 @@ speaker:
       voice: "male_us"
 
 usb_serial:
-  - name: "arduino"
+  - name: "arduino0"
     select:
       id: "sdjnk3j4"
+      baud: 115200
+      delimiter: "\n"
+  - name: "arduino1"
+    select:
+      id: "sdjnk3j5"
       baud: 115200
       delimiter: "\n"

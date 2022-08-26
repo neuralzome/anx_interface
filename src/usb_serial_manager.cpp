@@ -1,4 +1,6 @@
 #include "hermes_interface/usb_serial_manager.h"
+#include "std_msgs/String.h"
+#include <exception>
 
 UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager){
   // Save pointer to asset_manager 
@@ -23,40 +25,52 @@ UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager){
 void UsbSerialManager::Start(){
   // Create sockets and thread for usb_serial and start listning to ports for usb serial in stream
   for(auto& usb_serial : this->usb_serial_){
-    usb_serial.sub_ctx_ptr = std::make_unique<zmq::context_t>();
-    usb_serial.sub_socket_ptr = std::make_unique<zmq::socket_t>(
-        *usb_serial.sub_ctx_ptr,
-        zmq::socket_type::sub
-    );
     usb_serial.pub_ctx_ptr = std::make_unique<zmq::context_t>();
     usb_serial.pub_socket_ptr = std::make_unique<zmq::socket_t>(
         *usb_serial.pub_ctx_ptr,
+        zmq::socket_type::sub
+    );
+
+    usb_serial.sub_ctx_ptr = std::make_unique<zmq::context_t>();
+    usb_serial.sub_socket_ptr = std::make_unique<zmq::socket_t>(
+        *usb_serial.sub_ctx_ptr,
         zmq::socket_type::pub
     );
-    usb_serial.sub_port = this->asset_manager_->GetFreePort();
-    usb_serial.pub_port = this->asset_manager_->GetFreePort();
 
-    std::string sub_usb_serial_uri =
-        "tcp://" + 
-        this->hermes_ip_ +
-        ":"
-        + std::to_string(usb_serial.sub_port);
-    ROS_INFO("%s sub uri: %s", usb_serial.name.c_str(), sub_usb_serial_uri.c_str());
+    usb_serial.pub_port = this->asset_manager_->GetFreePort();
+    usb_serial.sub_port = this->asset_manager_->GetFreePort();
 
     std::string pub_usb_serial_uri =
         "tcp://" + 
-        std::string("*") +
+        this->hermes_ip_ +
         ":"
         + std::to_string(usb_serial.pub_port);
     ROS_INFO("%s pub uri: %s", usb_serial.name.c_str(), pub_usb_serial_uri.c_str());
 
-    usb_serial.sub_socket_ptr->connect(sub_usb_serial_uri);
-    usb_serial.sub_socket_ptr->set(zmq::sockopt::subscribe, ""); 
+    std::string sub_usb_serial_uri =
+        "tcp://" + 
+        std::string("*") +
+        ":"
+        + std::to_string(usb_serial.sub_port);
+    ROS_INFO("%s sub uri: %s", usb_serial.name.c_str(), sub_usb_serial_uri.c_str());
 
-    usb_serial.pub_socket_ptr->bind(pub_usb_serial_uri);
+    usb_serial.pub_socket_ptr->connect(pub_usb_serial_uri);
+    usb_serial.pub_socket_ptr->set(zmq::sockopt::subscribe, ""); 
 
-    usb_serial.sub_thread_ptr = std::make_unique<std::thread>(
-        &UsbSerialManager::InUsbSerialThread, this, &usb_serial
+    usb_serial.sub_socket_ptr->bind(sub_usb_serial_uri);
+
+    usb_serial.publisher = this->nh_.advertise<std_msgs::String>(usb_serial.name + "/out", 10); 
+
+    usb_serial.subscriber = this->nh_.subscribe<std_msgs::String>(usb_serial.name + "/in",
+                                                10,
+                                                boost::bind(
+                                                  &UsbSerialManager::ToUsbSerialCb,
+                                                  this,
+                                                  _1, &usb_serial)
+                                                );
+
+    usb_serial.pub_thread_ptr = std::make_unique<std::thread>(
+        &UsbSerialManager::FromUsbSerialThread, this, &usb_serial
     );
   }
 }
@@ -107,13 +121,31 @@ void UsbSerialManager::OnStateChange(nlohmann::json state){
   }
 }
 
-void UsbSerialManager::InUsbSerialThread(UsbSerial* usb_serial){
-  ROS_INFO("%s thread listening to %d started!", usb_serial->name.c_str(), usb_serial->sub_port);
+void UsbSerialManager::ToUsbSerialCb(
+    const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr,
+    UsbSerial* usb_serial){
+  usb_serial->sub_socket_ptr->send(
+      zmq::buffer(usb_serial_ros_msg_ptr->data),
+      zmq::send_flags::dontwait
+  );
+}
+
+void UsbSerialManager::FromUsbSerialThread(UsbSerial* usb_serial){
+  ROS_INFO("%s thread listening to %d started!", usb_serial->name.c_str(), usb_serial->pub_port);
   while (ros::ok()) {
     zmq::message_t msg;
-    usb_serial->sub_socket_ptr->recv(msg);
+    usb_serial->pub_socket_ptr->recv(msg);
 
-    ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str());
+    ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug
+    try{
+      nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+      std_msgs::String usb_serial_ros_msg;
+      usb_serial_ros_msg.data = msg_json["data"];
+      usb_serial->publisher.publish(usb_serial_ros_msg);
+    }catch(std::exception& e){
+      ROS_ERROR("Invalid msg received!");
+      ROS_ERROR("msg [InUsbSerialThread]: %s", msg.to_string().c_str());
+    }
   }
 }
 
