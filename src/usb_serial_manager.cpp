@@ -87,7 +87,7 @@ void UsbSerialManager::OnStateChange(nlohmann::json state){
         // Start Streaming
         nlohmann::json start_msg_json;
         start_msg_json["asset"] = {
-          {"type", "imu"},
+          {"type", "usb_serial"},
           {"meta", {
                      {"baud", usb_serial.select.baud},
                      {"delimiter", usb_serial.select.delimiter},
@@ -124,8 +124,12 @@ void UsbSerialManager::OnStateChange(nlohmann::json state){
 void UsbSerialManager::ToUsbSerialCb(
     const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr,
     UsbSerial* usb_serial){
+  /* ROS_INFO("msg: %s sent!", usb_serial_ros_msg_ptr->data.c_str()); // Debug */
+  nlohmann::json msg_json = {
+    {"data", usb_serial_ros_msg_ptr->data}
+  };
   usb_serial->sub_socket_ptr->send(
-      zmq::buffer(usb_serial_ros_msg_ptr->data),
+      zmq::buffer(msg_json.dump()),
       zmq::send_flags::dontwait
   );
 }
@@ -136,7 +140,7 @@ void UsbSerialManager::FromUsbSerialThread(UsbSerial* usb_serial){
     zmq::message_t msg;
     usb_serial->pub_socket_ptr->recv(msg);
 
-    ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug
+    /* ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug */
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
       std_msgs::String usb_serial_ros_msg;
@@ -164,7 +168,9 @@ bool UsbSerialManager::IsPresent(UsbSerial& usb_serial, nlohmann::json& state){
           state[i]["delimiter"].end(),
           usb_serial.select.delimiter
         ) != state[i]["delimiter"].end()){
+      /* ROS_INFO(state[i].dump().c_str()); // Debug */
       return true;
+    }else{
     }
   }
   return false;
