@@ -17,6 +17,7 @@ AssetManager::AssetManager():
   ros::NodeHandle nh_private("~");
 
   nh_private.getParam("hermes_ip", this->hermes_ip_);
+  nh_private.getParam("linux_ip", this->linux_ip_);
   nh_private.getParam("subscribe_asset_port", this->subscribe_asset_port_);
   nh_private.getParam("start_asset_port", this->start_asset_port_);
   nh_private.getParam("stop_asset_port", this->stop_asset_port_);
@@ -138,6 +139,7 @@ void AssetManager::AssetStateThread(){
 bool AssetManager::Subscribe(bool subscribe){
   nlohmann::json msg_req_json;
   msg_req_json["subscribe"] = subscribe;
+  msg_req_json["subscribers_ip"] = this->linux_ip_; 
   /* ROS_INFO(msg_req_json.dump().c_str()); // Debug */
 
   this->sub_asset_state_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);

@@ -50,6 +50,7 @@ private:
                stop_asset_port_,
                asset_state_port_;
   std::string hermes_ip_;
+  std::string linux_ip_;
 
   bool subscribed_;
   std::vector<int> port_pool_;
