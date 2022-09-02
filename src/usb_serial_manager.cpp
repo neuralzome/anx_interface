@@ -124,6 +124,9 @@ void UsbSerialManager::OnStateChange(nlohmann::json state){
 void UsbSerialManager::ToUsbSerialCb(
     const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr,
     UsbSerial* usb_serial){
+  if(!usb_serial->streaming){
+    return;
+  }
   /* ROS_INFO("msg: %s sent!", usb_serial_ros_msg_ptr->data.c_str()); // Debug */
   nlohmann::json msg_json = {
     {"data", usb_serial_ros_msg_ptr->data}
