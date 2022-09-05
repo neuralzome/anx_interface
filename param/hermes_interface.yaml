@@ -38,7 +38,7 @@ camera:
       stream:
         fps: 20
         width: 1280
-        hight: 720
+        height: 720
         pixel_format: "mjpeg"
       compression_quality: 80
     camera_info_url: "file://home/ubuntu/.ros/flo/arducam0.yaml"
@@ -49,7 +49,7 @@ camera:
       stream:
         fps: 20
         width: 1280
-        hight: 720
+        height: 720
         pixel_format: "mjpeg"
       compression_quality: 80
     camera_info_url: "file://home/ubuntu/.ros/flo/arducam1.yaml"
