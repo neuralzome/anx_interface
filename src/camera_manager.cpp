@@ -14,14 +14,32 @@ CameraManager::CameraManager(AssetManagerInterface* asset_manager){
     this->camera_.emplace_back();
 
     this->camera_.back().name = std::string(camera_params[i]["name"]);
+    this->camera_.back().frame_id = std::string(camera_params[i]["frame_id"]);
     this->camera_.back().select.id = std::string(camera_params[i]["select"]["id"]);
     this->camera_.back().select.stream.fps = int(camera_params[i]["select"]["stream"]["fps"]);
     this->camera_.back().select.stream.width = int(camera_params[i]["select"]["stream"]["width"]);
     this->camera_.back().select.stream.height = int(camera_params[i]["select"]["stream"]["height"]);
-    this->camera_.back().select.stream.pixel_format = std::string(camera_params[i]["select"]["stream"]["pixel_format"]);
-    this->camera_.back().select.compression_quality = int(camera_params[i]["select"]["compression_quality"]);
+    this->camera_.back().select.stream.pixel_format = std::string(
+        camera_params[i]["select"]["stream"]["pixel_format"]
+    );
+    this->camera_.back().select.compression_quality = int(
+        camera_params[i]["select"]["compression_quality"]
+    );
 
     this->camera_.back().camera_info_uri = std::string(camera_params[i]["camera_info_uri"]);
+    this->camera_.back().camera_info_manager_ptr = std::make_unique<camera_info_manager::CameraInfoManager>(
+        this->nh_,
+        this->camera_.back().name,
+        this->camera_.back().camera_info_uri
+    );
+		if (!this->camera_.back().camera_info_manager_ptr->isCalibrated()){
+      this->camera_.back().camera_info_manager_ptr->setCameraName(this->camera_.back().name);
+      sensor_msgs::CameraInfo camera_info;
+      camera_info.header.frame_id = this->camera_.back().frame_id;
+      camera_info.width = this->camera_.back().select.stream.width;
+      camera_info.height = this->camera_.back().select.stream.height;
+      this->camera_.back().camera_info_manager_ptr->setCameraInfo(camera_info);
+    }
   }
 }
 
@@ -44,6 +62,9 @@ void CameraManager::Start(){
 
     camera.socket_ptr->connect(camera_uri);
     camera.socket_ptr->set(zmq::sockopt::subscribe, ""); 
+
+    image_transport::ImageTransport it(this->nh_);
+    camera.publisher = it.advertiseCamera("image_raw", 1);
 
     camera.thread_ptr = std::make_unique<std::thread>(
         &CameraManager::CameraThread, this, &camera
@@ -108,7 +129,14 @@ void CameraManager::CameraThread(Camera* camera){
     zmq::message_t msg;
     camera->socket_ptr->recv(msg);
 
-    ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str());
+    ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug
+                                                                       //
+    /*
+     * TODO
+     * [ ] Obtain sensor_msgs::Image from msg.
+     * [ ] publish camera_info and image
+     */
+
   }
 }
 

@@ -32,6 +32,7 @@ gnss:
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CompressedImage.html
 camera:
   - name: "arducam0"
+    frame_id: "arducam0"
     select:
       id: "sknnc9ecs"
       stream:
@@ -42,6 +43,7 @@ camera:
       compression_quality: 80
     camera_info_url: "file://home/ubuntu/.ros/flo/arducam0.yaml"
   - name: "arducam1"
+    frame_id: "arducam1"
     select:
       id: "sknne2ecs"
       stream:
