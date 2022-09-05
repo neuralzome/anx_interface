@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   camera_info_manager
   image_transport
+  cv_bridge
 )
 
 find_package(cppzmq)
@@ -24,6 +25,7 @@ catkin_package(
     std_msgs
     camera_info_manager
     image_transport
+    cv_bridge
 )
 
 include_directories(
@@ -39,6 +41,7 @@ add_executable(
   src/imu_manager.cpp
   src/usb_serial_manager.cpp
   src/camera_manager.cpp
+  src/base64.cpp
 )
 
 target_link_libraries(

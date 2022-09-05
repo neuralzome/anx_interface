@@ -1,4 +1,5 @@
 #include "hermes_interface/camera_manager.h"
+#include "ros/time.h"
 
 CameraManager::CameraManager(AssetManagerInterface* asset_manager){
   // Save pointer to asset_manager 
@@ -130,13 +131,7 @@ void CameraManager::CameraThread(Camera* camera){
     camera->socket_ptr->recv(msg);
 
     ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug
-                                                                       //
-    /*
-     * TODO
-     * [ ] Obtain sensor_msgs::Image from msg.
-     * [ ] publish camera_info and image
-     */
-
+    this->PublishCameraStream(msg, camera);
   }
 }
 
@@ -162,4 +157,45 @@ bool CameraManager::IsPresent(Camera& camera, nlohmann::json& state){
     }
   }
   return false;
+}
+
+void CameraManager::PublishCameraStream(zmq::message_t& base64_encoder_jpeg_img, Camera* camera){
+  cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
+
+  // Copy message header
+  cv_ptr->header.seq = camera->seq;
+  cv_ptr->header.frame_id = camera->frame_id;
+  cv_ptr->header.stamp = ros::Time::now();
+
+  // Decode color/mono image
+  try{
+    cv_ptr->image = cv::imdecode(
+        cv::Mat(base64_decode(base64_encoder_jpeg_img.to_string())),
+        cv::IMREAD_UNCHANGED
+    );
+
+    switch (cv_ptr->image.channels()){
+      case 1:
+        cv_ptr->encoding = sensor_msgs::image_encodings::MONO8;
+        break;
+      case 3:
+        cv_ptr->encoding = sensor_msgs::image_encodings::BGR8;
+        break;
+      default:
+        ROS_ERROR("Unsupported number of channels: %i", cv_ptr->image.channels());
+        break;
+    }
+  }catch (cv::Exception& e){
+    ROS_ERROR("%s", e.what());
+  }
+
+  size_t rows = cv_ptr->image.rows;
+  size_t cols = cv_ptr->image.cols;
+
+  if ((rows > 0) && (cols > 0)){
+    sensor_msgs::CameraInfo camera_info = camera->camera_info_manager_ptr->getCameraInfo();
+    camera_info.header = cv_ptr->header;
+
+    camera->publisher.publish(*cv_ptr->toImageMsg(), camera_info);
+  }
 }

@@ -7,13 +7,18 @@
 #include <thread>
 #include <algorithm>
 
+#include <opencv2/opencv.hpp>
+
 #include <ros/ros.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 #include <camera_info_manager/camera_info_manager.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/CompressedImage.h>
 #include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 
 #include "hermes_interface/asset_manager_interface.h"
+#include "hermes_interface/base64.h"
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
@@ -56,6 +61,7 @@ public:
 private:
   void CameraThread(Camera* camera);
   bool IsPresent(Camera& camera, nlohmann::json& state);
+  void PublishCameraStream(zmq::message_t& base64_encoder_jpeg_img, Camera* camera);
 
   ros::NodeHandle nh_;
   AssetManagerInterface* asset_manager_;
