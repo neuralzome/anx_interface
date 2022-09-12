@@ -30,6 +30,7 @@ public:
   bool StopAsset(nlohmann::json msg) override;
   bool StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_srvs::SetBool::Response &res);
 private:
+  std::string GetIdentity();
   void AssetStateThread();
   bool Subscribe(bool subscribe);
   std::string asset_state_;
@@ -51,10 +52,14 @@ private:
   zmq::context_t stop_asset_ctx_;
   zmq::socket_t stop_asset_socket_;
 
+  zmq::context_t get_identity_ctx_;
+  zmq::socket_t get_identity_socket_;
+
   int subscribe_asset_port_,
                start_asset_port_,
                stop_asset_port_,
-               asset_state_port_;
+               asset_state_port_,
+               get_identity_port_;
   std::string hermes_ip_;
   std::string linux_ip_;
 

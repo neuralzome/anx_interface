@@ -7,7 +7,8 @@ subscribe_asset_port: 10000
 start_asset_port: 10001
 stop_asset_port: 10002
 asset_state_port: 10003
-port_pool_range: [10004, 10500]
+get_identity_port: 10004
+port_pool_range: [10010, 10500]
 
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Imu.html
 imu:

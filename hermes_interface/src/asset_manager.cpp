@@ -3,6 +3,7 @@
 #include "hermes_interface/hermes_interface.h"
 #include "hermes_interface/imu_manager.h"
 #include "hermes_interface/usb_serial_manager.h"
+#include <zmq.hpp>
 
 AssetManager::AssetManager():
     imu_manager_(this),
@@ -12,6 +13,7 @@ AssetManager::AssetManager():
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
     stop_asset_socket_(stop_asset_ctx_, zmq::socket_type::req),
+    get_identity_socket_(get_identity_ctx_, zmq::socket_type::req),
     subscribed_(false),
     non_core_asset_started_(false){
 
@@ -29,6 +31,7 @@ AssetManager::AssetManager():
   nh_private.getParam("start_asset_port", this->start_asset_port_);
   nh_private.getParam("stop_asset_port", this->stop_asset_port_);
   nh_private.getParam("asset_state_port", this->asset_state_port_);
+  nh_private.getParam("get_identity_port", this->get_identity_port_);
 
   // Initialize port pool
   std::vector<int> port_pool_range;
@@ -75,6 +78,15 @@ AssetManager::AssetManager():
       + std::to_string(this->stop_asset_port_);
   ROS_INFO("stop_state_uri: %s", stop_asset_uri.c_str());
   this->stop_asset_socket_.connect(stop_asset_uri);
+  
+  // Initialize socket for getting identity
+  std::string get_identity_uri =
+      "tcp://" + 
+      this->hermes_ip_ +
+      ":"
+      + std::to_string(this->get_identity_port_);
+  ROS_INFO("get_identity_uri: %s", get_identity_uri.c_str());
+  this->get_identity_socket_.connect(get_identity_uri);
 }
 
 void AssetManager::Start(){
@@ -100,6 +112,8 @@ void AssetManager::Start(){
       ROS_INFO("Failed to subscribe to asset state stream.");
     }
   }
+
+  this->nh_.setParam("identity", this->GetIdentity());
 }
 
 int AssetManager::GetFreePort(){
@@ -248,4 +262,24 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
     }
   }
   return true;
+}
+
+
+std::string AssetManager::GetIdentity(){
+  std::string identity = "";
+  this->get_identity_socket_.send(zmq::buffer("{}"), zmq::send_flags::dontwait);
+
+  zmq::message_t msg_res;
+  this->get_identity_socket_.recv(msg_res);
+  /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+  
+  try{
+    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+    identity = msg_res_json["imei"];
+  }catch (std::exception& e){
+    ROS_ERROR("Invalid msg received!");
+    ROS_ERROR("msg [GetIdentity]: %s", msg_res.to_string().c_str());
+  }
+
+  return identity;
 }
