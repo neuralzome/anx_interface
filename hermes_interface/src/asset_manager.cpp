@@ -2,6 +2,7 @@
 #include "hermes_interface/camera_manager.h"
 #include "hermes_interface/hermes_interface.h"
 #include "hermes_interface/imu_manager.h"
+#include "hermes_interface/phone_manager.h"
 #include "hermes_interface/usb_serial_manager.h"
 #include <zmq.hpp>
 
@@ -9,6 +10,7 @@ AssetManager::AssetManager():
     imu_manager_(this),
     usb_serial_manager_(this),
     camera_manager_(this),
+    phone_manager_(this),
     sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
@@ -112,6 +114,9 @@ void AssetManager::Start(){
       &AssetManager::AssetStateThread, this
   );
 
+  // Start core assets
+  this->phone_manager_.Start();
+
   // Subscribe to asset stream
   ROS_INFO("Subscribing...");
   if(this->Subscribe(true)){
@@ -164,6 +169,7 @@ void AssetManager::AssetStateThread(){
     ROS_INFO(this->asset_state_.c_str()); // Debug
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+      this->phone_manager_.OnStateChange(msg_json["phone"]);
       if(this->non_core_asset_started_){
         this->imu_manager_.OnStateChange(msg_json["imu"]);
         this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);

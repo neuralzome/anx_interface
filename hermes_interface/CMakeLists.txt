@@ -46,6 +46,7 @@ add_executable(
   src/usb_serial_manager.cpp
   src/camera_manager.cpp
   src/base64.cpp
+  src/phone_manager.cpp
 )
 
 target_link_libraries(
