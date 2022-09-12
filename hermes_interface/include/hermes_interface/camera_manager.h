@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <algorithm>
+#include <chrono>
 
 #include <opencv2/opencv.hpp>
 
@@ -52,20 +53,22 @@ public:
     std::unique_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_ptr;
 
     int seq = 0;
+    std::unique_ptr<ros::NodeHandle> nh_ptr;
     image_transport::CameraPublisher publisher;
   };
 
   CameraManager(AssetManagerInterface* asset_manager);
   void Start();
+  void Stop();
   void OnStateChange(nlohmann::json state);
 private:
   void CameraThread(Camera* camera);
   bool IsPresent(Camera& camera, nlohmann::json& state);
   void PublishCameraStream(zmq::message_t& base64_encoder_jpeg_img, Camera* camera);
 
-  ros::NodeHandle nh_;
   AssetManagerInterface* asset_manager_;
   std::string hermes_ip_;
+  bool started_;
 
   std::vector<Camera> camera_;
 };

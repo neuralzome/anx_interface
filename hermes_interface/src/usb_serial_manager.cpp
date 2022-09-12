@@ -2,77 +2,117 @@
 #include "std_msgs/String.h"
 #include <exception>
 
-UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager){
+UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager)
+  : started_(false){
   // Save pointer to asset_manager 
   this->asset_manager_ = asset_manager;
 
   ros::NodeHandle nh_private("~");
   nh_private.getParam("hermes_ip", this->hermes_ip_);
 
+}
+
+void UsbSerialManager::Start(){
+  this->started_ = true;
+  ros::NodeHandle nh_private("~");
+
   // Populate usb_serial_ from parameter server
   XmlRpc::XmlRpcValue usb_serial_params;
   nh_private.getParam("usb_serial", usb_serial_params);
   for(int i=0; i<usb_serial_params.size(); i++){
     this->usb_serial_.emplace_back();
+    UsbSerial* usb_serial = &this->usb_serial_.back();
 
-    this->usb_serial_.back().name = std::string(usb_serial_params[i]["name"]);
-    this->usb_serial_.back().select.id = std::string(usb_serial_params[i]["select"]["id"]);
-    this->usb_serial_.back().select.baud = int(usb_serial_params[i]["select"]["baud"]);
-    this->usb_serial_.back().select.delimiter = std::string(usb_serial_params[i]["select"]["delimiter"]);
-  }
-}
+    usb_serial->name = std::string(usb_serial_params[i]["name"]);
+    usb_serial->select.id = std::string(usb_serial_params[i]["select"]["id"]);
+    usb_serial->select.baud = int(usb_serial_params[i]["select"]["baud"]);
+    usb_serial->select.delimiter = std::string(usb_serial_params[i]["select"]["delimiter"]);
 
-void UsbSerialManager::Start(){
-  // Create sockets and thread for usb_serial and start listning to ports for usb serial in stream
-  for(auto& usb_serial : this->usb_serial_){
-    usb_serial.pub_ctx_ptr = std::make_unique<zmq::context_t>();
-    usb_serial.pub_socket_ptr = std::make_unique<zmq::socket_t>(
-        *usb_serial.pub_ctx_ptr,
+
+    usb_serial->pub_ctx_ptr = std::make_unique<zmq::context_t>();
+    usb_serial->pub_socket_ptr = std::make_unique<zmq::socket_t>(
+        *usb_serial->pub_ctx_ptr,
         zmq::socket_type::sub
     );
 
-    usb_serial.sub_ctx_ptr = std::make_unique<zmq::context_t>();
-    usb_serial.sub_socket_ptr = std::make_unique<zmq::socket_t>(
-        *usb_serial.sub_ctx_ptr,
+    usb_serial->sub_ctx_ptr = std::make_unique<zmq::context_t>();
+    usb_serial->sub_socket_ptr = std::make_unique<zmq::socket_t>(
+        *usb_serial->sub_ctx_ptr,
         zmq::socket_type::pub
     );
 
-    usb_serial.pub_port = this->asset_manager_->GetFreePort();
-    usb_serial.sub_port = this->asset_manager_->GetFreePort();
+    usb_serial->pub_port = this->asset_manager_->GetFreePort();
+    usb_serial->sub_port = this->asset_manager_->GetFreePort();
 
     std::string pub_usb_serial_uri =
         "tcp://" + 
         this->hermes_ip_ +
         ":"
-        + std::to_string(usb_serial.pub_port);
-    ROS_INFO("%s pub uri: %s", usb_serial.name.c_str(), pub_usb_serial_uri.c_str());
+        + std::to_string(usb_serial->pub_port);
+    ROS_INFO("%s pub uri: %s", usb_serial->name.c_str(), pub_usb_serial_uri.c_str());
 
     std::string sub_usb_serial_uri =
         "tcp://" + 
         std::string("*") +
         ":"
-        + std::to_string(usb_serial.sub_port);
-    ROS_INFO("%s sub uri: %s", usb_serial.name.c_str(), sub_usb_serial_uri.c_str());
+        + std::to_string(usb_serial->sub_port);
+    ROS_INFO("%s sub uri: %s", usb_serial->name.c_str(), sub_usb_serial_uri.c_str());
 
-    usb_serial.pub_socket_ptr->connect(pub_usb_serial_uri);
-    usb_serial.pub_socket_ptr->set(zmq::sockopt::subscribe, ""); 
+    usb_serial->pub_socket_ptr->connect(pub_usb_serial_uri);
+    usb_serial->pub_socket_ptr->set(zmq::sockopt::subscribe, ""); 
 
-    usb_serial.sub_socket_ptr->bind(sub_usb_serial_uri);
+    usb_serial->sub_socket_ptr->bind(sub_usb_serial_uri);
 
-    usb_serial.publisher = this->nh_.advertise<std_msgs::String>(usb_serial.name + "/out", 10); 
+      usb_serial->publisher = usb_serial->nh.advertise<std_msgs::String>(usb_serial->name + "/out", 10); 
 
-    usb_serial.subscriber = this->nh_.subscribe<std_msgs::String>(usb_serial.name + "/in",
-                                                10,
-                                                boost::bind(
-                                                  &UsbSerialManager::ToUsbSerialCb,
-                                                  this,
-                                                  _1, &usb_serial)
-                                                );
+    usb_serial->subscriber = usb_serial->nh.subscribe<std_msgs::String>(
+        usb_serial->name + "/in",
+        10,
+        boost::bind(
+          &UsbSerialManager::ToUsbSerialCb,
+          this,
+          _1, usb_serial)
+        );
+  }
 
+  // Starting usb_serial threads
+  for(auto& usb_serial : this->usb_serial_){
     usb_serial.pub_thread_ptr = std::make_unique<std::thread>(
         &UsbSerialManager::FromUsbSerialThread, this, &usb_serial
     );
   }
+}
+
+void UsbSerialManager::Stop(){
+  this->started_ = false;
+  for(auto& usb_serial : this->usb_serial_){
+
+    usb_serial.pub_socket_ptr->close();
+    usb_serial.pub_ctx_ptr->close();
+
+    usb_serial.pub_thread_ptr->join();
+
+    usb_serial.sub_socket_ptr->close();
+    usb_serial.sub_ctx_ptr->close();
+
+    if(usb_serial.streaming){
+      nlohmann::json stop_msg_json;
+      stop_msg_json["asset"] = {
+        {"type", "usb_serial"},
+        {"id", usb_serial.select.id}
+      };
+      if(this->asset_manager_->StopAsset(stop_msg_json)){
+        usb_serial.streaming = false;
+        ROS_INFO("%s stopped!", usb_serial.name.c_str());
+      }else{
+        ROS_INFO("Failed to stop %s!", usb_serial.name.c_str());
+      }
+    }
+
+    this->asset_manager_->ReturnFreePort(usb_serial.pub_port);
+    this->asset_manager_->ReturnFreePort(usb_serial.sub_port);
+  }
+  this->usb_serial_.clear();
 }
 
 void UsbSerialManager::OnStateChange(nlohmann::json state){
@@ -131,17 +171,27 @@ void UsbSerialManager::ToUsbSerialCb(
   nlohmann::json msg_json = {
     {"data", usb_serial_ros_msg_ptr->data}
   };
-  usb_serial->sub_socket_ptr->send(
-      zmq::buffer(msg_json.dump()),
-      zmq::send_flags::dontwait
-  );
+
+  try{
+    usb_serial->sub_socket_ptr->send(
+        zmq::buffer(msg_json.dump()),
+        zmq::send_flags::dontwait
+    );
+  }catch (std::exception& e){
+  }
 }
 
 void UsbSerialManager::FromUsbSerialThread(UsbSerial* usb_serial){
   ROS_INFO("%s thread listening to %d started!", usb_serial->name.c_str(), usb_serial->pub_port);
-  while (ros::ok()) {
+  while (this->started_ && ros::ok()) {
     zmq::message_t msg;
-    usb_serial->pub_socket_ptr->recv(msg);
+
+    try{
+      usb_serial->pub_socket_ptr->recv(msg);
+    }catch (std::exception& e){
+      ROS_INFO("Connection to %s terminated!", usb_serial->name.c_str());
+      break;
+    }
 
     /* ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug */
     try{

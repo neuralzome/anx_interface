@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 #include <ros/ros.h>
+#include <std_srvs/SetBool.h>
 
 #include "hermes_interface/asset_manager_interface.h"
 #include "hermes_interface/imu_manager.h"
@@ -22,15 +23,20 @@ class AssetManager : public AssetManagerInterface{
 public:
   AssetManager();
   int GetFreePort() override;
+  void ReturnFreePort(int port) override;
   void Start() override;
   void Stop() override;
   bool StartAsset(nlohmann::json msg) override;
   bool StopAsset(nlohmann::json msg) override;
+  bool StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_srvs::SetBool::Response &res);
 private:
   void AssetStateThread();
   bool Subscribe(bool subscribe);
+  std::string asset_state_;
 
   ros::NodeHandle nh_;
+  ros::ServiceServer start_server_;
+  bool non_core_asset_started_;
 
   zmq::context_t sub_asset_state_ctx_;
   zmq::socket_t sub_asset_state_socket_;

@@ -2,64 +2,95 @@
 #include "ros/time.h"
 #include "sensor_msgs/Imu.h"
 
-ImuManager::ImuManager(AssetManagerInterface* asset_manager){
+ImuManager::ImuManager(AssetManagerInterface* asset_manager): started_(false){
   // Save pointer to asset_manager 
   this->asset_manager_ = asset_manager;
 
   ros::NodeHandle nh_private("~");
   nh_private.getParam("hermes_ip", this->hermes_ip_);
+}
+
+void ImuManager::Start(){
+  this->started_ = true;
+  ros::NodeHandle nh_private("~");
 
   // Populate imu_ from parameter server
   XmlRpc::XmlRpcValue imu_params;
   nh_private.getParam("imu", imu_params);
   for(int i=0; i<imu_params.size(); i++){
     this->imu_.emplace_back();
+    Imu* imu = &this->imu_.back();
 
-    this->imu_.back().name = std::string(imu_params[i]["name"]);
-    this->imu_.back().select.id = std::string(imu_params[i]["select"]["id"]);
-    this->imu_.back().select.fps = int(imu_params[i]["select"]["fps"]);
+    imu->name = std::string(imu_params[i]["name"]);
+    imu->select.id = std::string(imu_params[i]["select"]["id"]);
+    imu->select.fps = int(imu_params[i]["select"]["fps"]);
     
     for(int j=0; j<3; j++){
-      this->imu_.back().covariance.orientation_covariance_diagonal[j]
+      imu->covariance.orientation_covariance_diagonal[j]
           = double(imu_params[i]["covariance"]["orientation_covariance_diagonal"][j]);
     }
     for(int j=0; j<3; j++){
-      this->imu_.back().covariance.angular_velocity_covariance_diagonal[j]
+      imu->covariance.angular_velocity_covariance_diagonal[j]
           = double(imu_params[i]["covariance"]["angular_velocity_covariance_diagonal"][j]);
     }
     for(int j=0; j<3; j++){
-      this->imu_.back().covariance.linear_acceleration_covariance_diagonal[j]
+      imu->covariance.linear_acceleration_covariance_diagonal[j]
           = double(imu_params[i]["covariance"]["linear_acceleration_covariance_diagonal"][j]);
     }
-  }
-}
 
-void ImuManager::Start(){
-  // Create sockets and thread for imu and start listning to ports for imu stream
-  for(auto& imu : this->imu_){
-    imu.ctx_ptr = std::make_unique<zmq::context_t>();
-    imu.socket_ptr = std::make_unique<zmq::socket_t>(
-        *imu.ctx_ptr,
+    imu->ctx_ptr = std::make_unique<zmq::context_t>();
+    imu->socket_ptr = std::make_unique<zmq::socket_t>(
+        *imu->ctx_ptr,
         zmq::socket_type::sub
     );
-    imu.port = this->asset_manager_->GetFreePort();
+    imu->port = this->asset_manager_->GetFreePort();
 
     std::string imu_uri =
         "tcp://" + 
         this->hermes_ip_ +
         ":"
-        + std::to_string(imu.port);
-    ROS_INFO("%s uri: %s", imu.name.c_str(), imu_uri.c_str());
+        + std::to_string(imu->port);
+    ROS_INFO("%s uri: %s", imu->name.c_str(), imu_uri.c_str());
 
-    imu.socket_ptr->connect(imu_uri);
-    imu.socket_ptr->set(zmq::sockopt::subscribe, ""); 
+    imu->socket_ptr->connect(imu_uri);
+    imu->socket_ptr->set(zmq::sockopt::subscribe, ""); 
 
-    imu.publisher = this->nh_.advertise<sensor_msgs::Imu>(imu.name, 10); 
+    imu->publisher = this->imu_.back().nh.advertise<sensor_msgs::Imu>(this->imu_.back().name, 10); 
+  }
 
+  for(auto& imu : this->imu_){
     imu.thread_ptr = std::make_unique<std::thread>(
         &ImuManager::ImuThread, this, &imu
     );
   }
+}
+
+void ImuManager::Stop(){
+  this->started_ = false;
+  for(auto& imu : this->imu_){
+
+    imu.socket_ptr->close();
+    imu.ctx_ptr->close();
+
+    imu.thread_ptr->join();
+
+    if(imu.streaming){
+      nlohmann::json stop_msg_json;
+      stop_msg_json["asset"] = {
+        {"type", "imu"},
+        {"id", imu.select.id}
+      };
+      if(this->asset_manager_->StopAsset(stop_msg_json)){
+        imu.streaming = false;
+        ROS_INFO("%s stopped!", imu.name.c_str());
+      }else{
+        ROS_INFO("Failed to stop %s!", imu.name.c_str());
+      }
+    }
+
+    this->asset_manager_->ReturnFreePort(imu.port);
+  }
+  this->imu_.clear();
 }
 
 void ImuManager::OnStateChange(nlohmann::json state){
@@ -104,9 +135,15 @@ void ImuManager::OnStateChange(nlohmann::json state){
 
 void ImuManager::ImuThread(Imu* imu){
   ROS_INFO("%s thread listening to %d started!", imu->name.c_str(), imu->port);
-  while (ros::ok()) {
+  while (this->started_ && ros::ok()) {
     zmq::message_t msg;
-    imu->socket_ptr->recv(msg);
+
+    try{
+      imu->socket_ptr->recv(msg);
+    }catch (std::exception& e){
+      ROS_INFO("Connection to %s terminated!", imu->name.c_str());
+      break;
+    }
 
     /* ROS_INFO("%s: %s", imu->name.c_str(), msg.to_string().c_str()); // Debug */
     try{

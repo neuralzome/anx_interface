@@ -12,9 +12,16 @@ AssetManager::AssetManager():
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
     stop_asset_socket_(stop_asset_ctx_, zmq::socket_type::req),
-    subscribed_(false){
+    subscribed_(false),
+    non_core_asset_started_(false){
 
   ros::NodeHandle nh_private("~");
+
+  this->start_server_ = nh_.advertiseService(
+      "start_non_core_assets",
+      &AssetManager::StartNonCoreAssetsCb,
+      this
+  );
 
   nh_private.getParam("hermes_ip", this->hermes_ip_);
   nh_private.getParam("linux_ip", this->linux_ip_);
@@ -71,11 +78,6 @@ AssetManager::AssetManager():
 }
 
 void AssetManager::Start(){
-  // Start Assets
-  this->imu_manager_.Start();
-  this->usb_serial_manager_.Start();
-  this->camera_manager_.Start();
-
   // Start listning to asset stream
   this->asset_state_thread_ = std::make_unique<std::thread>(
       &AssetManager::AssetStateThread, this
@@ -106,6 +108,10 @@ int AssetManager::GetFreePort(){
   return port;
 }
 
+void AssetManager::ReturnFreePort(int port){
+  this->port_pool_.emplace_back(port);
+}
+
 void AssetManager::Stop(){
   // Unsubscribe to asset stream
   if(this->subscribed_){
@@ -123,12 +129,15 @@ void AssetManager::AssetStateThread(){
     zmq::message_t msg;
     this->asset_state_socket_.recv(msg);
 
-    ROS_INFO(msg.to_string().c_str()); // Debug
+    this->asset_state_ = msg.to_string();
+    ROS_INFO(this->asset_state_.c_str()); // Debug
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      this->imu_manager_.OnStateChange(msg_json["imu"]);
-      this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
-      this->camera_manager_.OnStateChange(msg_json["camera"]);
+      if(this->non_core_asset_started_){
+        this->imu_manager_.OnStateChange(msg_json["imu"]);
+        this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
+        this->camera_manager_.OnStateChange(msg_json["camera"]);
+      }
     }catch (std::exception& e){
       ROS_ERROR("Invalid msg received!");
       ROS_ERROR("msg [AssetStateThread]: %s", msg.to_string().c_str());
@@ -199,4 +208,44 @@ bool AssetManager::StopAsset(nlohmann::json msg){
     ROS_ERROR("msg [StopAsset]: %s", msg_res.to_string().c_str());
     return false;
   }
+}
+
+bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_srvs::SetBool::Response &res){
+  if(req.data){
+    if(this->non_core_asset_started_){
+      res.success = true;
+      res.message = "Already started!";
+    }else{
+      this->imu_manager_.Start();
+      this->usb_serial_manager_.Start();
+      this->camera_manager_.Start();
+
+      if(!this->asset_state_.empty()){
+        try{
+          nlohmann::json msg_json = nlohmann::json::parse(this->asset_state_);
+          this->imu_manager_.OnStateChange(msg_json["imu"]);
+          this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
+          this->camera_manager_.OnStateChange(msg_json["camera"]);
+        }catch (std::exception& e){
+          ROS_ERROR("Invalid msg received!");
+          ROS_ERROR("msg [AssetStateThread]: %s", this->asset_state_.c_str());
+        }
+      }
+
+      res.success = true;
+      this->non_core_asset_started_ = true;
+    }
+  }else{
+    if(this->non_core_asset_started_){
+      this->imu_manager_.Stop();
+      this->usb_serial_manager_.Stop();
+      this->camera_manager_.Stop();
+      res.success = true;
+      this->non_core_asset_started_ = false;
+    }else{
+      res.success = true;
+      res.message = "Already stopped!";
+    }
+  }
+  return true;
 }
