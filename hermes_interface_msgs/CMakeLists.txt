@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hermes_interface_msgs)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

@@ -13,6 +13,8 @@
 
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
+#include <hermes_interface_msgs/SendSignal.h>
+#include <hermes_interface_msgs/Signal.h>
 
 #include "hermes_interface/asset_manager_interface.h"
 #include "hermes_interface/imu_manager.h"
@@ -29,6 +31,10 @@ public:
   bool StartAsset(nlohmann::json msg) override;
   bool StopAsset(nlohmann::json msg) override;
   bool StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_srvs::SetBool::Response &res);
+  bool SignalCb(
+      hermes_interface_msgs::SendSignal::Request  &req,
+      hermes_interface_msgs::SendSignal::Response &res
+  );
 private:
   std::string GetIdentity();
   void AssetStateThread();
@@ -37,6 +43,7 @@ private:
 
   ros::NodeHandle nh_;
   ros::ServiceServer start_server_;
+  ros::ServiceServer signal_server_;
   bool non_core_asset_started_;
 
   zmq::context_t sub_asset_state_ctx_;
@@ -55,11 +62,15 @@ private:
   zmq::context_t get_identity_ctx_;
   zmq::socket_t get_identity_socket_;
 
+  zmq::context_t send_signal_ctx_;
+  zmq::socket_t send_signal_socket_;
+
   int subscribe_asset_port_,
                start_asset_port_,
                stop_asset_port_,
                asset_state_port_,
-               get_identity_port_;
+               get_identity_port_,
+               send_signal_port_;;
   std::string hermes_ip_;
   std::string linux_ip_;
 

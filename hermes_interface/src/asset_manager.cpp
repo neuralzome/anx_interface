@@ -14,6 +14,7 @@ AssetManager::AssetManager():
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
     stop_asset_socket_(stop_asset_ctx_, zmq::socket_type::req),
     get_identity_socket_(get_identity_ctx_, zmq::socket_type::req),
+    send_signal_socket_(send_signal_ctx_, zmq::socket_type::req),
     subscribed_(false),
     non_core_asset_started_(false){
 
@@ -25,6 +26,12 @@ AssetManager::AssetManager():
       this
   );
 
+  this->signal_server_ = nh_.advertiseService(
+      "signal",
+      &AssetManager::SignalCb,
+      this
+  );
+
   nh_private.getParam("hermes_ip", this->hermes_ip_);
   nh_private.getParam("linux_ip", this->linux_ip_);
   nh_private.getParam("subscribe_asset_port", this->subscribe_asset_port_);
@@ -32,6 +39,7 @@ AssetManager::AssetManager():
   nh_private.getParam("stop_asset_port", this->stop_asset_port_);
   nh_private.getParam("asset_state_port", this->asset_state_port_);
   nh_private.getParam("get_identity_port", this->get_identity_port_);
+  nh_private.getParam("send_signal_port", this->send_signal_port_);
 
   // Initialize port pool
   std::vector<int> port_pool_range;
@@ -87,6 +95,15 @@ AssetManager::AssetManager():
       + std::to_string(this->get_identity_port_);
   ROS_INFO("get_identity_uri: %s", get_identity_uri.c_str());
   this->get_identity_socket_.connect(get_identity_uri);
+  
+  // Initialize socket for sending signal
+  std::string send_signal_uri =
+      "tcp://" + 
+      this->hermes_ip_ +
+      ":"
+      + std::to_string(this->send_signal_port_);
+  ROS_INFO("send_signal_uri: %s", send_signal_uri.c_str());
+  this->send_signal_socket_.connect(send_signal_uri);
 }
 
 void AssetManager::Start(){
@@ -282,4 +299,39 @@ std::string AssetManager::GetIdentity(){
   }
 
   return identity;
+}
+
+bool AssetManager::SignalCb(
+    hermes_interface_msgs::SendSignal::Request  &req,
+    hermes_interface_msgs::SendSignal::Response &res
+){
+  switch(req.signal.signal){
+    case hermes_interface_msgs::Signal::SHUTDOWN:
+      // TODO: Send SHUTDOWN signal
+      nlohmann::json msg_req_json;
+      msg_req_json["signal"] = 0;
+
+      this->send_signal_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);
+
+      zmq::message_t msg_res;
+      this->sub_asset_state_socket_.recv(msg_res);
+      /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+      
+      try{
+        nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+        if(!msg_res_json["success"]){
+          res.success = true;
+        }else{
+          res.success = false;
+          res.message = "Invalid signal";
+        }
+      }catch (std::exception& e){
+        ROS_ERROR("Invalid msg received!");
+        ROS_ERROR("msg [SendSignal]: %s", msg_res.to_string().c_str());
+        res.success = false;
+        res.message = "Invalid msg received!";
+      }
+      break;
+  }
+  return true;
 }

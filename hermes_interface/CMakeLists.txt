@@ -8,9 +8,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  std_srvs
   camera_info_manager
   image_transport
   cv_bridge
+  hermes_interface_msgs
 )
 
 find_package(cppzmq)
@@ -26,6 +28,8 @@ catkin_package(
     camera_info_manager
     image_transport
     cv_bridge
+    std_srvs
+    hermes_interface_msgs
 )
 
 include_directories(
