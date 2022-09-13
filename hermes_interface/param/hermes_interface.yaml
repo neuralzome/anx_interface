@@ -61,7 +61,7 @@ camera:
 speaker:
   - name: "speaker"
     select:
-      id: "sde4gg1"
+      id: "0"
       language: "english"
       voice: "male_us"
 

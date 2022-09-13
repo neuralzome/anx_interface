@@ -1,17 +1,11 @@
 #include "hermes_interface/asset_manager.h"
-#include "hermes_interface/camera_manager.h"
-#include "hermes_interface/hermes_interface.h"
-#include "hermes_interface/imu_manager.h"
-#include "hermes_interface/phone_manager.h"
-#include "hermes_interface/usb_serial_manager.h"
-#include <zmq.h>
-#include <zmq.hpp>
 
 AssetManager::AssetManager():
     imu_manager_(this),
     usb_serial_manager_(this),
     camera_manager_(this),
     phone_manager_(this),
+    speaker_manager_(this),
     sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
     asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
     start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
@@ -197,6 +191,7 @@ void AssetManager::AssetStateThread(){
         this->imu_manager_.OnStateChange(msg_json["imu"]);
         this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
         this->camera_manager_.OnStateChange(msg_json["camera"]);
+        this->speaker_manager_.OnStateChange(msg_json["speaker"]);
       }
     }catch (std::exception& e){
       ROS_ERROR("Invalid msg received!");
@@ -289,6 +284,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
       this->imu_manager_.Start();
       this->usb_serial_manager_.Start();
       this->camera_manager_.Start();
+      this->speaker_manager_.Start();
 
       if(!this->asset_state_.empty()){
         try{
@@ -296,6 +292,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
           this->imu_manager_.OnStateChange(msg_json["imu"]);
           this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
           this->camera_manager_.OnStateChange(msg_json["camera"]);
+          this->speaker_manager_.OnStateChange(msg_json["speaker"]);
         }catch (std::exception& e){
           ROS_ERROR("Invalid msg received!");
           ROS_ERROR("msg [AssetStateThread]: %s", this->asset_state_.c_str());
@@ -310,6 +307,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
       this->imu_manager_.Stop();
       this->usb_serial_manager_.Stop();
       this->camera_manager_.Stop();
+      this->speaker_manager_.Stop();
       res.success = true;
       this->non_core_asset_started_ = false;
     }else{

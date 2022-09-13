@@ -47,6 +47,7 @@ add_executable(
   src/camera_manager.cpp
   src/base64.cpp
   src/phone_manager.cpp
+  src/speaker_manager.cpp
 )
 
 target_link_libraries(
