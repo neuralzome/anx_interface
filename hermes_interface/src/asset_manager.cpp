@@ -4,6 +4,7 @@
 #include "hermes_interface/imu_manager.h"
 #include "hermes_interface/phone_manager.h"
 #include "hermes_interface/usb_serial_manager.h"
+#include <zmq.h>
 #include <zmq.hpp>
 
 AssetManager::AssetManager():
@@ -97,6 +98,10 @@ AssetManager::AssetManager():
       + std::to_string(this->get_identity_port_);
   ROS_INFO("get_identity_uri: %s", get_identity_uri.c_str());
   this->get_identity_socket_.connect(get_identity_uri);
+  this->get_identity_poll_.socket = this->get_identity_socket_;
+  this->get_identity_poll_.fd = 0;
+  this->get_identity_poll_.events = ZMQ_POLLIN;
+  this->get_identity_poll_.revents = 0;
   
   // Initialize socket for sending signal
   std::string send_signal_uri =
@@ -134,8 +139,12 @@ void AssetManager::Start(){
       ROS_INFO("Failed to subscribe to asset state stream.");
     }
   }
-
-  this->nh_.setParam("identity", this->GetIdentity());
+  
+  std::string identity = this->GetIdentity();
+  if(identity != ""){
+    ROS_INFO("identity: %s", identity.c_str());
+    this->nh_.setParam("identity", identity);
+  }
 }
 
 int AssetManager::GetFreePort(){
@@ -169,7 +178,7 @@ void AssetManager::AssetStateThread(){
     ROS_INFO(this->asset_state_.c_str()); // Debug
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      this->phone_manager_.OnStateChange(msg_json["phone"]);
+      this->phone_manager_.OnStateChange(msg_json["phone"][0]);
       if(this->non_core_asset_started_){
         this->imu_manager_.OnStateChange(msg_json["imu"]);
         this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
@@ -293,15 +302,20 @@ std::string AssetManager::GetIdentity(){
   this->get_identity_socket_.send(zmq::buffer("{}"), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
-  this->get_identity_socket_.recv(msg_res);
-  /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
-  
-  try{
-    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-    identity = msg_res_json["imei"];
-  }catch (std::exception& e){
-    ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg [GetIdentity]: %s", msg_res.to_string().c_str());
+  zmq::poll(&this->get_identity_poll_, 1, 2000);
+  if (this->get_identity_poll_.revents & ZMQ_POLLIN){
+    this->get_identity_socket_.recv(msg_res);
+    /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+
+    try{
+      nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+      identity = msg_res_json["imei"];
+    }catch (std::exception& e){
+      ROS_ERROR("Invalid msg received!");
+      ROS_ERROR("msg [GetIdentity]: %s", msg_res.to_string().c_str());
+    }
+  }else{
+    ROS_ERROR("GetIdentity request timed out!");
   }
 
   return identity;
@@ -311,23 +325,26 @@ bool AssetManager::SignalCb(
     hermes_interface_msgs::SendSignal::Request  &req,
     hermes_interface_msgs::SendSignal::Response &res
 ){
-  switch(req.signal.signal){
-    case hermes_interface_msgs::Signal::SHUTDOWN:
+  ROS_INFO("Sigal %d received!", req.signal.signal);
+
+  if(req.signal.signal == hermes_interface_msgs::Signal::SHUTDOWN){
       // TODO: Send SHUTDOWN signal
       nlohmann::json msg_req_json;
       msg_req_json["signal"] = 0;
-
+      
       this->send_signal_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);
 
       zmq::message_t msg_res;
       this->sub_asset_state_socket_.recv(msg_res);
-      /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+      ROS_INFO(msg_res.to_string().c_str()); // Debug
       
       try{
         nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
         if(!msg_res_json["success"]){
+          ROS_INFO("Phone Shutdown!");
           res.success = true;
         }else{
+          ROS_INFO("Phone responde with invalid signal!");
           res.success = false;
           res.message = "Invalid signal";
         }
@@ -337,7 +354,6 @@ bool AssetManager::SignalCb(
         res.success = false;
         res.message = "Invalid msg received!";
       }
-      break;
   }
   return true;
 }

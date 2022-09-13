@@ -62,6 +62,7 @@ private:
 
   zmq::context_t get_identity_ctx_;
   zmq::socket_t get_identity_socket_;
+  zmq::pollitem_t get_identity_poll_;
 
   zmq::context_t send_signal_ctx_;
   zmq::socket_t send_signal_socket_;
