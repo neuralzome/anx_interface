@@ -50,7 +50,7 @@ void PhoneManager::OnStateChange(nlohmann::json state){
       nlohmann::json start_msg_json;
       start_msg_json["asset"] = {
         {"type", "phone"},
-        {"meta", {"id", this->phone_.id}}
+        {"meta", {{"id", this->phone_.id}}}
       };
       start_msg_json["port"] = {
         {"pub", this->phone_.port}
