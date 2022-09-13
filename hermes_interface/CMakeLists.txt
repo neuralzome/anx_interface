@@ -8,9 +8,11 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  std_srvs
   camera_info_manager
   image_transport
   cv_bridge
+  hermes_interface_msgs
 )
 
 find_package(cppzmq)
@@ -26,6 +28,8 @@ catkin_package(
     camera_info_manager
     image_transport
     cv_bridge
+    std_srvs
+    hermes_interface_msgs
 )
 
 include_directories(
@@ -42,6 +46,7 @@ add_executable(
   src/usb_serial_manager.cpp
   src/camera_manager.cpp
   src/base64.cpp
+  src/phone_manager.cpp
 )
 
 target_link_libraries(

@@ -42,18 +42,21 @@ public:
     std::unique_ptr<std::thread> thread_ptr;
 
     int seq = 0;
+    ros::NodeHandle nh;
     ros::Publisher publisher;
   };
 
   ImuManager(AssetManagerInterface* asset_manager);
   void Start();
+  void Stop();
   void OnStateChange(nlohmann::json state);
 private:
-  ros::NodeHandle nh_;
   void ImuThread(Imu* imu);
   bool IsPresent(Imu& imu, nlohmann::json& state);
+
   AssetManagerInterface* asset_manager_;
   std::string hermes_ip_;
+  bool started_;
 
   std::vector<Imu> imu_;
 };

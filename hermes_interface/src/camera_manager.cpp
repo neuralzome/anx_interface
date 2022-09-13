@@ -1,76 +1,111 @@
 #include "hermes_interface/camera_manager.h"
-#include "ros/time.h"
 
-CameraManager::CameraManager(AssetManagerInterface* asset_manager){
+CameraManager::CameraManager(AssetManagerInterface* asset_manager)
+  : started_(false){
   // Save pointer to asset_manager 
   this->asset_manager_ = asset_manager;
 
   ros::NodeHandle nh_private("~");
   nh_private.getParam("hermes_ip", this->hermes_ip_);
 
+}
+
+void CameraManager::Start(){
+  this->started_ = true;
+  ros::NodeHandle nh_private("~");
+
   // Populate camera_ from parameter server
   XmlRpc::XmlRpcValue camera_params;
   nh_private.getParam("camera", camera_params);
   for(int i=0; i<camera_params.size(); i++){
     this->camera_.emplace_back();
+    Camera* camera = &this->camera_.back();
 
-    this->camera_.back().name = std::string(camera_params[i]["name"]);
-    this->camera_.back().frame_id = std::string(camera_params[i]["frame_id"]);
-    this->camera_.back().select.id = std::string(camera_params[i]["select"]["id"]);
-    this->camera_.back().select.stream.fps = int(camera_params[i]["select"]["stream"]["fps"]);
-    this->camera_.back().select.stream.width = int(camera_params[i]["select"]["stream"]["width"]);
-    this->camera_.back().select.stream.height = int(camera_params[i]["select"]["stream"]["height"]);
-    this->camera_.back().select.stream.pixel_format = std::string(
+    camera->name = std::string(camera_params[i]["name"]);
+    camera->nh_ptr = std::make_unique<ros::NodeHandle>(camera->name);
+    camera->frame_id = std::string(camera_params[i]["frame_id"]);
+    camera->select.id = std::string(camera_params[i]["select"]["id"]);
+    camera->select.stream.fps = int(camera_params[i]["select"]["stream"]["fps"]);
+    camera->select.stream.width = int(camera_params[i]["select"]["stream"]["width"]);
+    camera->select.stream.height = int(camera_params[i]["select"]["stream"]["height"]);
+    camera->select.stream.pixel_format = std::string(
         camera_params[i]["select"]["stream"]["pixel_format"]
     );
-    this->camera_.back().select.compression_quality = int(
+    camera->select.compression_quality = int(
         camera_params[i]["select"]["compression_quality"]
     );
 
-    this->camera_.back().camera_info_uri = std::string(camera_params[i]["camera_info_uri"]);
-    this->camera_.back().camera_info_manager_ptr = std::make_unique<camera_info_manager::CameraInfoManager>(
-        this->nh_,
-        this->camera_.back().name,
-        this->camera_.back().camera_info_uri
+    camera->camera_info_uri = std::string(camera_params[i]["camera_info_uri"]);
+    camera->camera_info_manager_ptr = std::make_unique<camera_info_manager::CameraInfoManager>(
+        *camera->nh_ptr,
+        camera->name,
+        camera->camera_info_uri
     );
-		if (!this->camera_.back().camera_info_manager_ptr->isCalibrated()){
-      this->camera_.back().camera_info_manager_ptr->setCameraName(this->camera_.back().name);
+		if (!camera->camera_info_manager_ptr->isCalibrated()){
+      camera->camera_info_manager_ptr->setCameraName(camera->name);
       sensor_msgs::CameraInfo camera_info;
-      camera_info.header.frame_id = this->camera_.back().frame_id;
-      camera_info.width = this->camera_.back().select.stream.width;
-      camera_info.height = this->camera_.back().select.stream.height;
-      this->camera_.back().camera_info_manager_ptr->setCameraInfo(camera_info);
+      camera_info.header.frame_id = camera->frame_id;
+      camera_info.width = camera->select.stream.width;
+      camera_info.height = camera->select.stream.height;
+      camera->camera_info_manager_ptr->setCameraInfo(camera_info);
     }
-  }
-}
 
-void CameraManager::Start(){
-  // Create sockets and thread for camera and start listning to ports for camera stream
-  for(auto& camera : this->camera_){
-    camera.ctx_ptr = std::make_unique<zmq::context_t>();
-    camera.socket_ptr = std::make_unique<zmq::socket_t>(
-        *camera.ctx_ptr,
+
+    camera->ctx_ptr = std::make_unique<zmq::context_t>();
+    camera->socket_ptr = std::make_unique<zmq::socket_t>(
+        *camera->ctx_ptr,
         zmq::socket_type::sub
     );
-    camera.port = this->asset_manager_->GetFreePort();
+    camera->port = this->asset_manager_->GetFreePort();
 
     std::string camera_uri =
         "tcp://" + 
         this->hermes_ip_ +
         ":"
-        + std::to_string(camera.port);
-    ROS_INFO("%s uri: %s", camera.name.c_str(), camera_uri.c_str());
+        + std::to_string(camera->port);
+    ROS_INFO("%s uri: %s", camera->name.c_str(), camera_uri.c_str());
 
-    camera.socket_ptr->connect(camera_uri);
-    camera.socket_ptr->set(zmq::sockopt::subscribe, ""); 
+    camera->socket_ptr->connect(camera_uri);
+    camera->socket_ptr->set(zmq::sockopt::subscribe, ""); 
 
-    image_transport::ImageTransport it(this->nh_);
-    camera.publisher = it.advertiseCamera("image_raw", 1);
+    image_transport::ImageTransport it(*camera->nh_ptr);
+    camera->publisher = it.advertiseCamera("image_raw", 1);
+  }
 
+  // Starting camera threads
+  for(auto& camera : this->camera_){
     camera.thread_ptr = std::make_unique<std::thread>(
         &CameraManager::CameraThread, this, &camera
     );
   }
+}
+
+void CameraManager::Stop(){
+  this->started_ = false;
+  for(auto& camera : this->camera_){
+
+    camera.socket_ptr->close();
+    camera.ctx_ptr->close();
+
+    camera.thread_ptr->join();
+
+    if(camera.streaming){
+      nlohmann::json stop_msg_json;
+      stop_msg_json["asset"] = {
+        {"type", "camera"},
+        {"id", camera.select.id}
+      };
+      if(this->asset_manager_->StopAsset(stop_msg_json)){
+        camera.streaming = false;
+        ROS_INFO("%s stopped!", camera.name.c_str());
+      }else{
+        ROS_INFO("Failed to stop %s!", camera.name.c_str());
+      }
+    }
+
+    this->asset_manager_->ReturnFreePort(camera.port);
+  }
+  this->camera_.clear();
 }
 
 void CameraManager::OnStateChange(nlohmann::json state){
@@ -126,11 +161,17 @@ void CameraManager::OnStateChange(nlohmann::json state){
 
 void CameraManager::CameraThread(Camera* camera){
   ROS_INFO("%s thread listening to %d started!", camera->name.c_str(), camera->port);
-  while (ros::ok()) {
+  while (this->started_ && ros::ok()) {
     zmq::message_t msg;
-    camera->socket_ptr->recv(msg);
 
-    ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug
+    try{
+      camera->socket_ptr->recv(msg);
+    }catch (std::exception& e){
+      ROS_INFO("Connection to %s terminated!", camera->name.c_str());
+      break;
+    }
+
+    /* ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug */
     this->PublishCameraStream(msg, camera);
   }
 }

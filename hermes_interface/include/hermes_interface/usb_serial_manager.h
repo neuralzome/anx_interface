@@ -38,20 +38,24 @@ public:
     std::unique_ptr<zmq::context_t> pub_ctx_ptr;
     std::unique_ptr<zmq::socket_t> pub_socket_ptr;
     std::unique_ptr<std::thread> pub_thread_ptr;
+
+    ros::NodeHandle nh;
     ros::Publisher publisher;
     ros::Subscriber subscriber;
   };
 
   UsbSerialManager(AssetManagerInterface* asset_manager);
   void Start();
+  void Stop();
   void OnStateChange(nlohmann::json state);
   void ToUsbSerialCb(const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr, UsbSerial* usb_serial);
 private:
   void FromUsbSerialThread(UsbSerial* usb_serial);
   bool IsPresent(UsbSerial& usb_serial, nlohmann::json& state);
-  ros::NodeHandle nh_;
+
   AssetManagerInterface* asset_manager_;
   std::string hermes_ip_;
+  bool started_;
 
   std::vector<UsbSerial> usb_serial_;
 };
