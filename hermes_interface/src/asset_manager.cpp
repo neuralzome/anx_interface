@@ -323,7 +323,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
 
 std::string AssetManager::GetIdentity(){
   std::string identity = "";
-  this->get_identity_socket_.send(zmq::buffer("{}"), zmq::send_flags::dontwait);
+  this->get_identity_socket_.send(zmq::str_buffer("{}"), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
   zmq::poll(&this->get_identity_poll_, 1, 2000);
