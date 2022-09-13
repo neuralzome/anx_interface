@@ -23,13 +23,13 @@ AssetManager::AssetManager():
 
   ros::NodeHandle nh_private("~");
 
-  this->start_server_ = nh_.advertiseService(
+  this->start_server_ = nh_private.advertiseService(
       "start_non_core_assets",
       &AssetManager::StartNonCoreAssetsCb,
       this
   );
 
-  this->signal_server_ = nh_.advertiseService(
+  this->signal_server_ = nh_private.advertiseService(
       "signal",
       &AssetManager::SignalCb,
       this
@@ -80,6 +80,10 @@ AssetManager::AssetManager():
       + std::to_string(this->start_asset_port_);
   ROS_INFO("start_state_uri: %s", start_asset_uri.c_str());
   this->start_asset_socket_.connect(start_asset_uri);
+  this->start_asset_poll_.socket = this->start_asset_socket_;
+  this->start_asset_poll_.fd = 0;
+  this->start_asset_poll_.events = ZMQ_POLLIN;
+  this->start_asset_poll_.revents = 0;
   
   // Initialize socket for stopping asset stream
   std::string stop_asset_uri =
@@ -89,6 +93,10 @@ AssetManager::AssetManager():
       + std::to_string(this->stop_asset_port_);
   ROS_INFO("stop_state_uri: %s", stop_asset_uri.c_str());
   this->stop_asset_socket_.connect(stop_asset_uri);
+  this->stop_asset_poll_.socket = this->stop_asset_socket_;
+  this->stop_asset_poll_.fd = 0;
+  this->stop_asset_poll_.events = ZMQ_POLLIN;
+  this->stop_asset_poll_.revents = 0;
   
   // Initialize socket for getting identity
   std::string get_identity_uri =
@@ -111,9 +119,15 @@ AssetManager::AssetManager():
       + std::to_string(this->send_signal_port_);
   ROS_INFO("send_signal_uri: %s", send_signal_uri.c_str());
   this->send_signal_socket_.connect(send_signal_uri);
+  this->send_signal_poll_.socket = this->send_signal_socket_;
+  this->send_signal_poll_.fd = 0;
+  this->send_signal_poll_.events = ZMQ_POLLIN;
+  this->send_signal_poll_.revents = 0;
 }
 
 void AssetManager::Start(){
+  ros::NodeHandle nh_private("~");
+
   // Start listning to asset stream
   this->asset_state_thread_ = std::make_unique<std::thread>(
       &AssetManager::AssetStateThread, this
@@ -143,7 +157,7 @@ void AssetManager::Start(){
   std::string identity = this->GetIdentity();
   if(identity != ""){
     ROS_INFO("identity: %s", identity.c_str());
-    this->nh_.setParam("identity", identity);
+    nh_private.setParam("identity", identity);
   }
 }
 
@@ -220,18 +234,23 @@ bool AssetManager::StartAsset(nlohmann::json msg){
   this->start_asset_socket_.send(zmq::buffer(msg.dump()), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
-  this->start_asset_socket_.recv(msg_res);
-  /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
-  
-  try{
-    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-    if(!msg_res_json["success"]){
-      ROS_INFO(msg_res_json["message"].dump().c_str());
+  zmq::poll(&this->start_asset_poll_, 1, 2000);
+  if (this->start_asset_poll_.revents & ZMQ_POLLIN){
+    this->start_asset_socket_.recv(msg_res);
+    /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+    try{
+      nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+      if(!msg_res_json["success"]){
+        ROS_INFO(msg_res_json["message"].dump().c_str());
+      }
+      return msg_res_json["success"];
+    }catch (std::exception& e){
+      ROS_ERROR("Invalid msg received!");
+      ROS_ERROR("msg [StartAsset]: %s", msg_res.to_string().c_str());
+      return false;
     }
-    return msg_res_json["success"];
-  }catch (std::exception& e){
-    ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg [StartAsset]: %s", msg_res.to_string().c_str());
+  }else{
+    ROS_ERROR("StartAsset request: %s timed out!", msg.dump().c_str());
     return false;
   }
 }
@@ -240,18 +259,23 @@ bool AssetManager::StopAsset(nlohmann::json msg){
   this->stop_asset_socket_.send(zmq::buffer(msg.dump()), zmq::send_flags::dontwait);
 
   zmq::message_t msg_res;
-  this->stop_asset_socket_.recv(msg_res);
-  /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
-  
-  try{
-    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-    if(!msg_res_json["success"]){
-      ROS_INFO(msg_res_json["message"].dump().c_str());
+  zmq::poll(&this->stop_asset_poll_, 1, 2000);
+  if (this->stop_asset_poll_.revents & ZMQ_POLLIN){
+    this->stop_asset_socket_.recv(msg_res);
+    /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+    try{
+      nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+      if(!msg_res_json["success"]){
+        ROS_INFO(msg_res_json["message"].dump().c_str());
+      }
+      return msg_res_json["success"];
+    }catch (std::exception& e){
+      ROS_ERROR("Invalid msg received!");
+      ROS_ERROR("msg [StopAsset]: %s", msg_res.to_string().c_str());
+      return false;
     }
-    return msg_res_json["success"];
-  }catch (std::exception& e){
-    ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg [StopAsset]: %s", msg_res.to_string().c_str());
+  }else{
+    ROS_ERROR("StopAsset request: %s timed out!", msg.dump().c_str());
     return false;
   }
 }
@@ -327,33 +351,39 @@ bool AssetManager::SignalCb(
 ){
   ROS_INFO("Sigal %d received!", req.signal.signal);
 
-  if(req.signal.signal == hermes_interface_msgs::Signal::SHUTDOWN){
-      // TODO: Send SHUTDOWN signal
-      nlohmann::json msg_req_json;
-      msg_req_json["signal"] = 0;
-      
-      this->send_signal_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);
+  nlohmann::json msg_req_json;
+  msg_req_json["signal"] = hermes_interface_msgs::Signal::SHUTDOWN;
 
-      zmq::message_t msg_res;
-      this->sub_asset_state_socket_.recv(msg_res);
-      ROS_INFO(msg_res.to_string().c_str()); // Debug
-      
-      try{
-        nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-        if(!msg_res_json["success"]){
-          ROS_INFO("Phone Shutdown!");
-          res.success = true;
-        }else{
-          ROS_INFO("Phone responde with invalid signal!");
-          res.success = false;
-          res.message = "Invalid signal";
-        }
-      }catch (std::exception& e){
-        ROS_ERROR("Invalid msg received!");
-        ROS_ERROR("msg [SendSignal]: %s", msg_res.to_string().c_str());
+
+  this->send_signal_socket_.send(
+      zmq::buffer(msg_req_json.dump()),
+      zmq::send_flags::dontwait
+  );
+
+  zmq::message_t msg_res;
+  zmq::poll(&this->send_signal_poll_, 1, 2000);
+  if (this->send_signal_poll_.revents & ZMQ_POLLIN){
+    this->send_signal_socket_.recv(msg_res);
+    
+    try{
+      nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+      if(!msg_res_json["success"]){
+        ROS_INFO("Sigal %d sent!", req.signal.signal);
+        res.success = true;
+      }else{
+          ROS_INFO("Failed to send %d signal: %s", req.signal.signal, std::string(msg_res_json["message"]).c_str());
         res.success = false;
-        res.message = "Invalid msg received!";
+        res.message = std::string(msg_res_json["message"]);
       }
+    }catch (std::exception& e){
+      ROS_ERROR("Invalid msg received!");
+      ROS_ERROR("msg [SendSignal]: %s", msg_res.to_string().c_str());
+      res.success = false;
+      res.message = "Invalid msg received!";
+    }
+  }else{
+    ROS_ERROR("SendSignal request timed out!");
   }
+
   return true;
 }
