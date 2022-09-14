@@ -28,7 +28,6 @@ void SpeakerManager::Start(){
     speaker->name = std::string(speaker_params[i]["name"]);
     speaker->select.id = std::string(speaker_params[i]["select"]["id"]);
     speaker->select.language = std::string(speaker_params[i]["select"]["language"]);
-    speaker->select.voice = std::string(speaker_params[i]["select"]["voice"]);
 
     speaker->sub_ctx_ptr = std::make_unique<zmq::context_t>();
     speaker->sub_socket_ptr = std::make_unique<zmq::socket_t>(
@@ -102,7 +101,6 @@ void SpeakerManager::OnStateChange(nlohmann::json state){
           {"type", "speaker"},
           {"meta", {
                      {"language", speaker.select.language},
-                     {"voice", speaker.select.voice},
                      {"id", speaker.select.id}
                    }
           }
@@ -161,12 +159,7 @@ bool SpeakerManager::IsPresent(Speaker& speaker, nlohmann::json& state){
           state[i]["language"].begin(),
           state[i]["language"].end(),
           speaker.select.language
-        ) != state[i]["language"].end() &&
-        std::find(
-          state[i]["voice"].begin(),
-          state[i]["voice"].end(),
-          speaker.select.voice
-        ) != state[i]["voice"].end()){
+        ) != state[i]["language"].end()){
       /* ROS_INFO(state[i].dump().c_str()); // Debug */
       return true;
     }else{

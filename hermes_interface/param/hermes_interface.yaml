@@ -63,7 +63,6 @@ speaker:
     select:
       id: "0"
       language: "en"
-      voice: "ur-PK-language"
 
 usb_serial:
   - name: "arduino0"

@@ -27,7 +27,6 @@ public:
     struct {
       std::string id;
       std::string language;
-      std::string voice;
     } select;
 
     bool streaming = false;
