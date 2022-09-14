@@ -11,7 +11,11 @@ ImuManager::ImuManager(AssetManagerInterface* asset_manager): started_(false){
 }
 
 void ImuManager::Start(){
-  this->started_ = true;
+  if(this->started_){
+    return;
+  }else{
+    this->started_ = true;
+  }
   ros::NodeHandle nh_private("~");
 
   // Populate imu_ from parameter server
@@ -66,7 +70,11 @@ void ImuManager::Start(){
 }
 
 void ImuManager::Stop(){
-  this->started_ = false;
+  if(this->started_){
+    this->started_ = false;
+  }else{
+    return;
+  }
   for(auto& imu : this->imu_){
 
     imu.socket_ptr->close();

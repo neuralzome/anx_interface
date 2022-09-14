@@ -13,7 +13,11 @@ UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager)
 }
 
 void UsbSerialManager::Start(){
-  this->started_ = true;
+  if(this->started_){
+    return;
+  }else{
+    this->started_ = true;
+  }
   ros::NodeHandle nh_private("~");
 
   // Populate usb_serial_ from parameter server
@@ -84,7 +88,11 @@ void UsbSerialManager::Start(){
 }
 
 void UsbSerialManager::Stop(){
-  this->started_ = false;
+  if(this->started_){
+    this->started_ = false;
+  }else{
+    return;
+  }
   for(auto& usb_serial : this->usb_serial_){
 
     usb_serial.pub_socket_ptr->close();

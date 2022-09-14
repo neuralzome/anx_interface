@@ -62,8 +62,8 @@ speaker:
   - name: "speaker"
     select:
       id: "0"
-      language: "english"
-      voice: "male_us"
+      language: "en"
+      voice: "ur-PK-language"
 
 usb_serial:
   - name: "arduino0"

@@ -11,7 +11,11 @@ SpeakerManager::SpeakerManager(AssetManagerInterface* asset_manager)
 }
 
 void SpeakerManager::Start(){
-  this->started_ = true;
+  if(this->started_){
+    return;
+  }else{
+    this->started_ = true;
+  }
   ros::NodeHandle nh_private("~");
 
   // Populate usb_serial_ from parameter server
@@ -55,7 +59,11 @@ void SpeakerManager::Start(){
 }
 
 void SpeakerManager::Stop(){
-  this->started_ = false;
+  if(this->started_){
+    this->started_ = false;
+  }else{
+    return;
+  }
   for(auto& speaker : this->speaker_){
     speaker.sub_socket_ptr->close();
     speaker.sub_ctx_ptr->close();
@@ -94,7 +102,7 @@ void SpeakerManager::OnStateChange(nlohmann::json state){
           {"type", "speaker"},
           {"meta", {
                      {"language", speaker.select.language},
-                     {"void", speaker.select.voice},
+                     {"voice", speaker.select.voice},
                      {"id", speaker.select.id}
                    }
           }
