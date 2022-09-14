@@ -128,7 +128,7 @@ void AssetManager::Start(){
   );
 
   // Start core assets
-  /* this->phone_manager_.Start(); */
+  this->phone_manager_.Start();
 
   // Subscribe to asset stream
   ROS_INFO("Subscribing...");
@@ -186,7 +186,7 @@ void AssetManager::AssetStateThread(){
     ROS_INFO(this->asset_state_.c_str()); // Debug
     try{
       nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      /* this->phone_manager_.OnStateChange(msg_json["phone"][0]); */
+      this->phone_manager_.OnStateChange(msg_json["phone"][0]);
       if(this->non_core_asset_started_){
         this->imu_manager_.OnStateChange(msg_json["imu"]);
         this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
