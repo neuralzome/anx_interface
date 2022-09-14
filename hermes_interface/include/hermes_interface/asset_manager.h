@@ -21,6 +21,7 @@
 #include "hermes_interface/usb_serial_manager.h"
 #include "hermes_interface/camera_manager.h"
 #include "hermes_interface/phone_manager.h"
+#include "hermes_interface/speaker_manager.h"
 
 class AssetManager : public AssetManagerInterface{
 public:
@@ -86,4 +87,5 @@ private:
   UsbSerialManager usb_serial_manager_;
   CameraManager camera_manager_;
   PhoneManager phone_manager_;
+  SpeakerManager speaker_manager_;
 };

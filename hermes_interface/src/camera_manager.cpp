@@ -11,7 +11,11 @@ CameraManager::CameraManager(AssetManagerInterface* asset_manager)
 }
 
 void CameraManager::Start(){
-  this->started_ = true;
+  if(this->started_){
+    return;
+  }else{
+    this->started_ = true;
+  }
   ros::NodeHandle nh_private("~");
 
   // Populate camera_ from parameter server
@@ -81,7 +85,11 @@ void CameraManager::Start(){
 }
 
 void CameraManager::Stop(){
-  this->started_ = false;
+  if(this->started_){
+    this->started_ = false;
+  }else{
+    return;
+  }
   for(auto& camera : this->camera_){
 
     camera.socket_ptr->close();
