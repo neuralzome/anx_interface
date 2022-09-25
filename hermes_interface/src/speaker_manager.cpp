@@ -29,9 +29,8 @@ void SpeakerManager::Start(){
     speaker->select.id = std::string(speaker_params[i]["select"]["id"]);
     speaker->select.language = std::string(speaker_params[i]["select"]["language"]);
 
-    speaker->sub_ctx_ptr = std::make_unique<zmq::context_t>();
     speaker->sub_socket_ptr = std::make_unique<zmq::socket_t>(
-        *speaker->sub_ctx_ptr,
+        this->ctx_,
         zmq::socket_type::pub
     );
 
@@ -64,9 +63,6 @@ void SpeakerManager::Stop(){
     return;
   }
   for(auto& speaker : this->speaker_){
-    speaker.sub_socket_ptr->close();
-    speaker.sub_ctx_ptr->close();
-
     if(speaker.streaming){
       nlohmann::json stop_msg_json;
       stop_msg_json["asset"] = {

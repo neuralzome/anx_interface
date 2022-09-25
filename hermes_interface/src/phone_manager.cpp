@@ -14,11 +14,15 @@ void PhoneManager::Start(){
 
   XmlRpc::XmlRpcValue phone_params;
   nh_private.getParam("phone", phone_params);
-  this->phone_.ctx_ptr = std::make_unique<zmq::context_t>();
   this->phone_.socket_ptr = std::make_unique<zmq::socket_t>(
-      *this->phone_.ctx_ptr,
+      this->ctx_,
       zmq::socket_type::sub
   );
+  this->phone_.poll_ptr = std::make_unique<zmq::pollitem_t>();
+  this->phone_.poll_ptr->socket = *this->phone_.socket_ptr;
+  this->phone_.poll_ptr->fd = 0;
+  this->phone_.poll_ptr->events = ZMQ_POLLIN;
+  this->phone_.poll_ptr->revents = 0;
   this->phone_.port = this->asset_manager_->GetFreePort();
 
   std::string phone_uri =
@@ -80,28 +84,31 @@ void PhoneManager::PhoneThread(){
   ROS_INFO("phone thread listening to %d started!", this->phone_.port);
   while (ros::ok()) {
     zmq::message_t msg;
-    this->phone_.socket_ptr->recv(msg);
+    zmq::poll(this->phone_.poll_ptr.get(), 1, 100);
+    if (this->phone_.poll_ptr->revents & ZMQ_POLLIN){
+      this->phone_.socket_ptr->recv(msg);
 
-    /* ROS_INFO("phone: %s", msg.to_string().c_str()); // Debug */
-    try{
-      nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      hermes_interface_msgs::PhoneState phone_state_ros_msg;
+      /* ROS_INFO("phone: %s", msg.to_string().c_str()); // Debug */
+      try{
+        nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+        hermes_interface_msgs::PhoneState phone_state_ros_msg;
 
-      phone_state_ros_msg.header.seq = this->phone_.seq++;
-      phone_state_ros_msg.header.stamp = ros::Time::now();
-      phone_state_ros_msg.header.frame_id = "phone";
+        phone_state_ros_msg.header.seq = this->phone_.seq++;
+        phone_state_ros_msg.header.stamp = ros::Time::now();
+        phone_state_ros_msg.header.frame_id = "phone";
 
-      phone_state_ros_msg.charging = msg_json["charging"];
-      phone_state_ros_msg.cpu_ram_usage = msg_json["cpu_ram_usage"];
-      phone_state_ros_msg.cpu_usage = msg_json["cpu_usage"];
-      phone_state_ros_msg.cpu_temp = msg_json["cpu_temp"];
-      phone_state_ros_msg.gpu_vram_usage = msg_json["gpu_vram_usage"];
-      phone_state_ros_msg.gpu_usage = msg_json["gpu_usage"];
+        phone_state_ros_msg.charging = msg_json["charging"];
+        phone_state_ros_msg.cpu_ram_usage = msg_json["cpu_ram_usage"];
+        phone_state_ros_msg.cpu_usage = msg_json["cpu_usage"];
+        phone_state_ros_msg.cpu_temp = msg_json["cpu_temp"];
+        phone_state_ros_msg.gpu_vram_usage = msg_json["gpu_vram_usage"];
+        phone_state_ros_msg.gpu_usage = msg_json["gpu_usage"];
 
-      this->phone_.publisher.publish(phone_state_ros_msg);
-    }catch (std::exception& e){
-      ROS_ERROR("Invalid msg received!");
-      ROS_ERROR("msg [PhoneThread]: %s", msg.to_string().c_str());
+        this->phone_.publisher.publish(phone_state_ros_msg);
+      }catch (std::exception& e){
+        ROS_ERROR("Invalid msg received!");
+        ROS_ERROR("msg [PhoneThread]: %s", msg.to_string().c_str());
+      }
     }
   }
 }

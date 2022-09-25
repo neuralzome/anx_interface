@@ -48,26 +48,22 @@ private:
   ros::ServiceServer signal_server_;
   bool non_core_asset_started_;
 
-  zmq::context_t sub_asset_state_ctx_;
+  zmq::context_t ctx_;
+
   zmq::socket_t sub_asset_state_socket_;
 
-  zmq::context_t asset_state_ctx_;
   zmq::socket_t asset_state_socket_;
   std::unique_ptr<std::thread> asset_state_thread_;
 
-  zmq::context_t start_asset_ctx_;
   zmq::socket_t start_asset_socket_;
   zmq::pollitem_t start_asset_poll_;
 
-  zmq::context_t stop_asset_ctx_;
   zmq::socket_t stop_asset_socket_;
   zmq::pollitem_t stop_asset_poll_;
 
-  zmq::context_t get_identity_ctx_;
   zmq::socket_t get_identity_socket_;
   zmq::pollitem_t get_identity_poll_;
 
-  zmq::context_t send_signal_ctx_;
   zmq::socket_t send_signal_socket_;
   zmq::pollitem_t send_signal_poll_;
 

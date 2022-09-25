@@ -37,8 +37,8 @@ public:
 
     bool streaming = false;
     int port;
-    std::unique_ptr<zmq::context_t> ctx_ptr;
     std::unique_ptr<zmq::socket_t> socket_ptr;
+    std::unique_ptr<zmq::pollitem_t> poll_ptr;
     std::unique_ptr<std::thread> thread_ptr;
 
     int seq = 0;
@@ -51,6 +51,7 @@ public:
   void Stop();
   void OnStateChange(nlohmann::json state);
 private:
+  zmq::context_t ctx_;
   void ImuThread(Imu* imu);
   bool IsPresent(Imu& imu, nlohmann::json& state);
 

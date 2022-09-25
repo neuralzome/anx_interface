@@ -1,8 +1,8 @@
-hermes_ip: "192.168.43.1"
-# hermes_ip: "192.168.1.8"
+# hermes_ip: "192.168.43.1"
+hermes_ip: "192.168.1.5"
 
-# linux_ip: "192.168.1.7"
-linux_ip: "192.168.43.223"
+linux_ip: "192.168.1.7"
+# linux_ip: "192.168.43.223"
 
 subscribe_asset_port: 10000
 start_asset_port: 10001
@@ -70,8 +70,8 @@ usb_serial:
       id: "0"
       baud: 115200
       delimiter: "\n"
-  - name: "arduino1"
-    select:
-      id: "1"
-      baud: 115200
-      delimiter: "\n"
+  # - name: "arduino1"
+  #   select:
+  #     id: "1"
+  #     baud: 115200
+  #     delimiter: "\n"

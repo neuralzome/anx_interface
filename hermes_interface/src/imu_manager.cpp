@@ -1,6 +1,7 @@
 #include "hermes_interface/imu_manager.h"
 #include "ros/time.h"
 #include "sensor_msgs/Imu.h"
+#include <zmq.hpp>
 
 ImuManager::ImuManager(AssetManagerInterface* asset_manager): started_(false){
   // Save pointer to asset_manager 
@@ -42,11 +43,16 @@ void ImuManager::Start(){
           = double(imu_params[i]["covariance"]["linear_acceleration_covariance_diagonal"][j]);
     }
 
-    imu->ctx_ptr = std::make_unique<zmq::context_t>();
     imu->socket_ptr = std::make_unique<zmq::socket_t>(
-        *imu->ctx_ptr,
+        this->ctx_,
         zmq::socket_type::sub
     );
+    imu->poll_ptr = std::make_unique<zmq::pollitem_t>();
+    imu->poll_ptr->socket = *imu->socket_ptr;
+    imu->poll_ptr->fd = 0;
+    imu->poll_ptr->events = ZMQ_POLLIN;
+    imu->poll_ptr->revents = 0;
+
     imu->port = this->asset_manager_->GetFreePort();
 
     std::string imu_uri =
@@ -76,9 +82,6 @@ void ImuManager::Stop(){
     return;
   }
   for(auto& imu : this->imu_){
-
-    imu.socket_ptr->close();
-    imu.ctx_ptr->close();
 
     imu.thread_ptr->join();
 
@@ -145,50 +148,53 @@ void ImuManager::ImuThread(Imu* imu){
   ROS_INFO("%s thread listening to %d started!", imu->name.c_str(), imu->port);
   while (this->started_ && ros::ok()) {
     zmq::message_t msg;
+    zmq::poll(imu->poll_ptr.get(), 1, 100);
 
-    try{
-      imu->socket_ptr->recv(msg);
-    }catch (std::exception& e){
-      ROS_INFO("Connection to %s terminated!", imu->name.c_str());
-      break;
-    }
+    if (imu->poll_ptr->revents & ZMQ_POLLIN){
+      try{
+        imu->socket_ptr->recv(msg);
+      }catch (std::exception& e){
+        ROS_INFO("Connection to %s terminated!", imu->name.c_str());
+        break;
+      }
 
-    /* ROS_INFO("%s: %s", imu->name.c_str(), msg.to_string().c_str()); // Debug */
-    try{
-      nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      sensor_msgs::Imu imu_ros_msg;
+      /* ROS_INFO("%s: %s", imu->name.c_str(), msg.to_string().c_str()); // Debug */
+      try{
+        nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+        sensor_msgs::Imu imu_ros_msg;
 
-      imu_ros_msg.header.seq = imu->seq++;
-      imu_ros_msg.header.stamp = ros::Time::now();
-      imu_ros_msg.header.frame_id = imu->name;
+        imu_ros_msg.header.seq = imu->seq++;
+        imu_ros_msg.header.stamp = ros::Time::now();
+        imu_ros_msg.header.frame_id = imu->name;
 
-      imu_ros_msg.orientation.x = msg_json["q"][0];
-      imu_ros_msg.orientation.y = msg_json["q"][1];
-      imu_ros_msg.orientation.z = msg_json["q"][2];
-      imu_ros_msg.orientation.w = msg_json["q"][3];
-      imu_ros_msg.orientation_covariance[0] = imu->covariance.orientation_covariance_diagonal[0];
-      imu_ros_msg.orientation_covariance[4] = imu->covariance.orientation_covariance_diagonal[1];
-      imu_ros_msg.orientation_covariance[8] = imu->covariance.orientation_covariance_diagonal[2];
+        imu_ros_msg.orientation.x = msg_json["q"][0];
+        imu_ros_msg.orientation.y = msg_json["q"][1];
+        imu_ros_msg.orientation.z = msg_json["q"][2];
+        imu_ros_msg.orientation.w = msg_json["q"][3];
+        imu_ros_msg.orientation_covariance[0] = imu->covariance.orientation_covariance_diagonal[0];
+        imu_ros_msg.orientation_covariance[4] = imu->covariance.orientation_covariance_diagonal[1];
+        imu_ros_msg.orientation_covariance[8] = imu->covariance.orientation_covariance_diagonal[2];
 
-      imu_ros_msg.angular_velocity.x = msg_json["w"][0];
-      imu_ros_msg.angular_velocity.y = msg_json["w"][1];
-      imu_ros_msg.angular_velocity.z = msg_json["w"][2];
-      imu_ros_msg.angular_velocity_covariance[0] = imu->covariance.angular_velocity_covariance_diagonal[0];
-      imu_ros_msg.angular_velocity_covariance[4] = imu->covariance.angular_velocity_covariance_diagonal[1];
-      imu_ros_msg.angular_velocity_covariance[8] = imu->covariance.angular_velocity_covariance_diagonal[2];
+        imu_ros_msg.angular_velocity.x = msg_json["w"][0];
+        imu_ros_msg.angular_velocity.y = msg_json["w"][1];
+        imu_ros_msg.angular_velocity.z = msg_json["w"][2];
+        imu_ros_msg.angular_velocity_covariance[0] = imu->covariance.angular_velocity_covariance_diagonal[0];
+        imu_ros_msg.angular_velocity_covariance[4] = imu->covariance.angular_velocity_covariance_diagonal[1];
+        imu_ros_msg.angular_velocity_covariance[8] = imu->covariance.angular_velocity_covariance_diagonal[2];
 
-      imu_ros_msg.linear_acceleration.x = msg_json["a"][0];
-      imu_ros_msg.linear_acceleration.y = msg_json["a"][1];
-      imu_ros_msg.linear_acceleration.z = msg_json["a"][2];
-      imu_ros_msg.linear_acceleration_covariance[0] = imu->covariance.linear_acceleration_covariance_diagonal[0];
-      imu_ros_msg.linear_acceleration_covariance[4] = imu->covariance.linear_acceleration_covariance_diagonal[1];
-      imu_ros_msg.linear_acceleration_covariance[8] = imu->covariance.linear_acceleration_covariance_diagonal[2];
+        imu_ros_msg.linear_acceleration.x = msg_json["a"][0];
+        imu_ros_msg.linear_acceleration.y = msg_json["a"][1];
+        imu_ros_msg.linear_acceleration.z = msg_json["a"][2];
+        imu_ros_msg.linear_acceleration_covariance[0] = imu->covariance.linear_acceleration_covariance_diagonal[0];
+        imu_ros_msg.linear_acceleration_covariance[4] = imu->covariance.linear_acceleration_covariance_diagonal[1];
+        imu_ros_msg.linear_acceleration_covariance[8] = imu->covariance.linear_acceleration_covariance_diagonal[2];
 
-      imu->publisher.publish(imu_ros_msg);
+        imu->publisher.publish(imu_ros_msg);
 
-    }catch (std::exception& e){
-      ROS_ERROR("Invalid msg received!");
-      ROS_ERROR("msg [ImuThread]: %s", msg.to_string().c_str());
+      }catch (std::exception& e){
+        ROS_ERROR("Invalid msg received!");
+        ROS_ERROR("msg [ImuThread]: %s", msg.to_string().c_str());
+      }
     }
   }
 }

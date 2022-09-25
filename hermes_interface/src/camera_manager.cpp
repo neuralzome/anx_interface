@@ -55,11 +55,15 @@ void CameraManager::Start(){
     }
 
 
-    camera->ctx_ptr = std::make_unique<zmq::context_t>();
     camera->socket_ptr = std::make_unique<zmq::socket_t>(
-        *camera->ctx_ptr,
+        this->ctx_,
         zmq::socket_type::sub
     );
+    camera->poll_ptr = std::make_unique<zmq::pollitem_t>();
+    camera->poll_ptr->socket = *camera->socket_ptr;
+    camera->poll_ptr->fd = 0;
+    camera->poll_ptr->events = ZMQ_POLLIN;
+    camera->poll_ptr->revents = 0;
     camera->port = this->asset_manager_->GetFreePort();
 
     std::string camera_uri =
@@ -91,9 +95,6 @@ void CameraManager::Stop(){
     return;
   }
   for(auto& camera : this->camera_){
-
-    camera.socket_ptr->close();
-    camera.ctx_ptr->close();
 
     camera.thread_ptr->join();
 
@@ -171,16 +172,19 @@ void CameraManager::CameraThread(Camera* camera){
   ROS_INFO("%s thread listening to %d started!", camera->name.c_str(), camera->port);
   while (this->started_ && ros::ok()) {
     zmq::message_t msg;
+    zmq::poll(camera->poll_ptr.get(), 1, 100);
 
-    try{
-      camera->socket_ptr->recv(msg);
-    }catch (std::exception& e){
-      ROS_INFO("Connection to %s terminated!", camera->name.c_str());
-      break;
-    }
+    if (camera->poll_ptr->revents & ZMQ_POLLIN){
+      try{
+        camera->socket_ptr->recv(msg);
+      }catch (std::exception& e){
+        ROS_INFO("Connection to %s terminated!", camera->name.c_str());
+        break;
+      }
 
-    /* ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug */
-    this->PublishCameraStream(msg, camera);
+      /* ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug */
+      this->PublishCameraStream(msg, camera);
+      }
   }
 }
 

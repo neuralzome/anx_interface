@@ -33,10 +33,9 @@ public:
     bool streaming = false;
     int pub_port;
     int sub_port;
-    std::unique_ptr<zmq::context_t> sub_ctx_ptr;
     std::unique_ptr<zmq::socket_t> sub_socket_ptr;
-    std::unique_ptr<zmq::context_t> pub_ctx_ptr;
     std::unique_ptr<zmq::socket_t> pub_socket_ptr;
+    std::unique_ptr<zmq::pollitem_t> pub_poll_ptr;
     std::unique_ptr<std::thread> pub_thread_ptr;
 
     ros::NodeHandle nh;
@@ -50,6 +49,7 @@ public:
   void OnStateChange(nlohmann::json state);
   void ToUsbSerialCb(const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr, UsbSerial* usb_serial);
 private:
+  zmq::context_t ctx_;
   void FromUsbSerialThread(UsbSerial* usb_serial);
   bool IsPresent(UsbSerial& usb_serial, nlohmann::json& state);
 

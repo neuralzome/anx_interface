@@ -31,7 +31,6 @@ public:
 
     bool streaming = false;
     int sub_port;
-    std::unique_ptr<zmq::context_t> sub_ctx_ptr;
     std::unique_ptr<zmq::socket_t> sub_socket_ptr;
 
     ros::NodeHandle nh;
@@ -44,6 +43,7 @@ public:
   void OnStateChange(nlohmann::json state);
   void ToSpeakerCb(const std_msgs::String::ConstPtr& speaker_msg_ptr, Speaker* speaker);
 private:
+  zmq::context_t ctx_;
   bool IsPresent(Speaker& speaker, nlohmann::json& state);
 
   AssetManagerInterface* asset_manager_;

@@ -6,12 +6,12 @@ AssetManager::AssetManager():
     camera_manager_(this),
     phone_manager_(this),
     speaker_manager_(this),
-    sub_asset_state_socket_(sub_asset_state_ctx_, zmq::socket_type::req),
-    asset_state_socket_(asset_state_ctx_, zmq::socket_type::sub),
-    start_asset_socket_(start_asset_ctx_, zmq::socket_type::req),
-    stop_asset_socket_(stop_asset_ctx_, zmq::socket_type::req),
-    get_identity_socket_(get_identity_ctx_, zmq::socket_type::req),
-    send_signal_socket_(send_signal_ctx_, zmq::socket_type::req),
+    sub_asset_state_socket_(ctx_, zmq::socket_type::req),
+    asset_state_socket_(ctx_, zmq::socket_type::sub),
+    start_asset_socket_(ctx_, zmq::socket_type::req),
+    stop_asset_socket_(ctx_, zmq::socket_type::req),
+    get_identity_socket_(ctx_, zmq::socket_type::req),
+    send_signal_socket_(ctx_, zmq::socket_type::req),
     subscribed_(false),
     non_core_asset_started_(false){
 
