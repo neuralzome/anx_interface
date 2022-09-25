@@ -1,5 +1,4 @@
 #include "hermes_interface/phone_manager.h"
-#include "hermes_interface_msgs/PhoneState.h"
 
 PhoneManager::PhoneManager(AssetManagerInterface* asset_manager){
   // Save pointer to asset_manager 

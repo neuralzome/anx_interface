@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <chrono>
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
@@ -51,8 +52,10 @@ private:
   zmq::context_t ctx_;
 
   zmq::socket_t sub_asset_state_socket_;
+  zmq::pollitem_t sub_asset_state_poll_;
 
   zmq::socket_t asset_state_socket_;
+  zmq::pollitem_t asset_state_poll_;
   std::unique_ptr<std::thread> asset_state_thread_;
 
   zmq::socket_t start_asset_socket_;

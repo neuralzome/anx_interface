@@ -1,4 +1,5 @@
 #include "hermes_interface/asset_manager.h"
+#include <chrono>
 
 AssetManager::AssetManager():
     imu_manager_(this),
@@ -56,6 +57,10 @@ AssetManager::AssetManager():
   asset_state_socket_.connect(asset_state_uri);
   ROS_INFO("asset_state_uri: %s", asset_state_uri.c_str());
   asset_state_socket_.set(zmq::sockopt::subscribe, "");
+  this->asset_state_poll_.socket = this->asset_state_socket_;
+  this->asset_state_poll_.fd = 0;
+  this->asset_state_poll_.events = ZMQ_POLLIN;
+  this->asset_state_poll_.revents = 0;
 
   // Initialize socket for subscribing to asset stream
   std::string subscribe_asset_uri =
@@ -65,6 +70,10 @@ AssetManager::AssetManager():
       + std::to_string(this->subscribe_asset_port_);
   ROS_INFO("sub_asset_state_uri: %s", subscribe_asset_uri.c_str());
   this->sub_asset_state_socket_.connect(subscribe_asset_uri);
+  this->sub_asset_state_poll_.socket = this->sub_asset_state_socket_;
+  this->sub_asset_state_poll_.fd = 0;
+  this->sub_asset_state_poll_.events = ZMQ_POLLIN;
+  this->sub_asset_state_poll_.revents = 0;
 
   // Initialize socket for starting asset stream
   std::string start_asset_uri =
@@ -180,22 +189,26 @@ void AssetManager::Stop(){
 void AssetManager::AssetStateThread(){
   while (ros::ok()) {
     zmq::message_t msg;
-    this->asset_state_socket_.recv(msg);
+    zmq::poll(&this->asset_state_poll_, 1, 100);
 
-    this->asset_state_ = msg.to_string();
-    ROS_INFO(this->asset_state_.c_str()); // Debug
-    try{
-      nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-      this->phone_manager_.OnStateChange(msg_json["phone"][0]);
-      if(this->non_core_asset_started_){
-        this->imu_manager_.OnStateChange(msg_json["imu"]);
-        this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
-        this->camera_manager_.OnStateChange(msg_json["camera"]);
-        this->speaker_manager_.OnStateChange(msg_json["speaker"]);
+    if (this->asset_state_poll_.revents & ZMQ_POLLIN){
+      this->asset_state_socket_.recv(msg);
+
+      this->asset_state_ = msg.to_string();
+      ROS_INFO(this->asset_state_.c_str()); // Debug
+      try{
+        nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+        this->phone_manager_.OnStateChange(msg_json["phone"][0]);
+        if(this->non_core_asset_started_){
+          this->imu_manager_.OnStateChange(msg_json["imu"]);
+          this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
+          this->camera_manager_.OnStateChange(msg_json["camera"]);
+          this->speaker_manager_.OnStateChange(msg_json["speaker"]);
+        }
+      }catch (std::exception& e){
+        ROS_ERROR("Invalid msg received!");
+        ROS_ERROR("msg [AssetStateThread]: %s", msg.to_string().c_str());
       }
-    }catch (std::exception& e){
-      ROS_ERROR("Invalid msg received!");
-      ROS_ERROR("msg [AssetStateThread]: %s", msg.to_string().c_str());
     }
   }
 }
@@ -206,23 +219,34 @@ bool AssetManager::Subscribe(bool subscribe){
   msg_req_json["subscribers_ip"] = this->linux_ip_; 
   /* ROS_INFO(msg_req_json.dump().c_str()); // Debug */
 
-  this->sub_asset_state_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);
-
-  zmq::message_t msg_res;
-  this->sub_asset_state_socket_.recv(msg_res);
-  /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
-  
   try{
-    nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-    if(!msg_res_json["success"]){
-      ROS_INFO(msg_res_json["message"].dump().c_str());
+    this->sub_asset_state_socket_.send(zmq::buffer(msg_req_json.dump()), zmq::send_flags::dontwait);
+
+    zmq::message_t msg_res;
+    zmq::poll(&this->sub_asset_state_poll_, 1, 2000);
+    if (this->sub_asset_state_poll_.revents & ZMQ_POLLIN){
+      this->sub_asset_state_socket_.recv(msg_res);
+      /* ROS_INFO(msg_res.to_string().c_str()); // Debug */
+      
+      try{
+        nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
+        if(!msg_res_json["success"]){
+          ROS_INFO(msg_res_json["message"].dump().c_str());
+        }
+        return msg_res_json["success"];
+      }catch (std::exception& e){
+        ROS_ERROR("Invalid msg received!");
+        ROS_ERROR("msg [Subscribe]: %s", msg_res.to_string().c_str());
+        return false;
+      }
+    }else{
+      ROS_WARN("Subscribe/Unsubscribe asset state timed out!");
     }
-    return msg_res_json["success"];
   }catch (std::exception& e){
-    ROS_ERROR("Invalid msg received!");
-    ROS_ERROR("msg [Subscribe]: %s", msg_res.to_string().c_str());
+    ROS_WARN("[Subscribe] %s", e.what());
     return false;
   }
+
 }
 
 bool AssetManager::StartAsset(nlohmann::json msg){

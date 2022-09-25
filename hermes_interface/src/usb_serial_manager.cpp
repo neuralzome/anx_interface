@@ -1,6 +1,4 @@
 #include "hermes_interface/usb_serial_manager.h"
-#include "std_msgs/String.h"
-#include <exception>
 
 UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager)
   : started_(false){

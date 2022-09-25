@@ -1,7 +1,4 @@
 #include "hermes_interface/imu_manager.h"
-#include "ros/time.h"
-#include "sensor_msgs/Imu.h"
-#include <zmq.hpp>
 
 ImuManager::ImuManager(AssetManagerInterface* asset_manager): started_(false){
   // Save pointer to asset_manager 

@@ -70,8 +70,8 @@ usb_serial:
       id: "0"
       baud: 115200
       delimiter: "\n"
-  # - name: "arduino1"
-  #   select:
-  #     id: "1"
-  #     baud: 115200
-  #     delimiter: "\n"
+  - name: "arduino1"
+    select:
+      id: "1"
+      baud: 115200
+      delimiter: "\n"

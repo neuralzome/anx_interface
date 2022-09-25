@@ -1,6 +1,5 @@
 #include "hermes_interface/hermes_interface.h"
 #include "hermes_interface/asset_manager.h"
-#include <memory>
 
 std::unique_ptr<HermesInterface> HermesInterface::instance_ = nullptr;
 

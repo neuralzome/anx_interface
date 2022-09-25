@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <algorithm>
+#include <exception>
 
 #include <ros/ros.h>
 #include <std_msgs/String.h>
