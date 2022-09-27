@@ -50,6 +50,8 @@ add_executable(
   src/speaker_manager.cpp
 )
 
+add_dependencies(hermes_interface ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(
   hermes_interface
   ${catkin_LIBRARIES}
