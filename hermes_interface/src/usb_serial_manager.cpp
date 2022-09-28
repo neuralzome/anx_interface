@@ -196,7 +196,7 @@ void UsbSerialManager::FromUsbSerialThread(UsbSerial* usb_serial){
         break;
       }
 
-      ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug
+      /* ROS_INFO("%s: %s", usb_serial->name.c_str(), msg.to_string().c_str()); // Debug */
       try{
         nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
         std_msgs::String usb_serial_ros_msg;

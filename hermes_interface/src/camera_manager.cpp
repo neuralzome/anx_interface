@@ -174,17 +174,15 @@ void CameraManager::CameraThread(Camera* camera){
     zmq::message_t msg;
     zmq::poll(camera->poll_ptr.get(), 1, 100);
 
-    if (camera->poll_ptr->revents & ZMQ_POLLIN){
-      try{
-        camera->socket_ptr->recv(msg);
-      }catch (std::exception& e){
-        ROS_INFO("Connection to %s terminated!", camera->name.c_str());
-        break;
-      }
+    try{
+      camera->socket_ptr->recv(msg/* , zmq::recv_flags::dontwait */);
+    }catch (std::exception& e){
+      ROS_INFO("Connection to %s terminated!", camera->name.c_str());
+      break;
+    }
 
-      /* ROS_INFO("%s: %s", camera->name.c_str(), msg.to_string().c_str()); // Debug */
-      this->PublishCameraStream(msg, camera);
-      }
+    ROS_INFO("%s: %d", camera->name.c_str(), msg.size()); // Debug
+    this->PublishCameraStream(msg, camera);
   }
 }
 
@@ -212,7 +210,7 @@ bool CameraManager::IsPresent(Camera& camera, nlohmann::json& state){
   return false;
 }
 
-void CameraManager::PublishCameraStream(zmq::message_t& base64_encoder_jpeg_img, Camera* camera){
+void CameraManager::PublishCameraStream(zmq::message_t& msg, Camera* camera){
   cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage);
 
   // Copy message header
@@ -222,8 +220,11 @@ void CameraManager::PublishCameraStream(zmq::message_t& base64_encoder_jpeg_img,
 
   // Decode color/mono image
   try{
+    uint32_t size = msg.size();
+    auto img_raw = (BYTE *) msg.data();
+    std::vector<BYTE> bytes(img_raw, img_raw + size);
     cv_ptr->image = cv::imdecode(
-        cv::Mat(base64_decode(base64_encoder_jpeg_img.to_string())),
+        cv::Mat(/* base64_decode(jpeg_img.to_string()) */bytes),
         cv::IMREAD_UNCHANGED
     );
 

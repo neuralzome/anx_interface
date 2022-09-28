@@ -37,9 +37,9 @@ camera:
   - name: "arducam0"
     frame_id: "arducam0"
     select:
-      id: "sknnc9ecs"
+      id: "2"
       stream:
-        fps: 20
+        fps: 30
         width: 1280
         height: 720
         pixel_format: "mjpeg"
@@ -48,9 +48,9 @@ camera:
   - name: "arducam1"
     frame_id: "arducam1"
     select:
-      id: "sknne2ecs"
+      id: "3"
       stream:
-        fps: 20
+        fps: 30
         width: 1280
         height: 720
         pixel_format: "mjpeg"
