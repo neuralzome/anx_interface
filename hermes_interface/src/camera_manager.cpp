@@ -95,7 +95,6 @@ void CameraManager::Stop(){
     return;
   }
   for(auto& camera : this->camera_){
-
     camera.thread_ptr->join();
 
     if(camera.streaming){
@@ -174,15 +173,18 @@ void CameraManager::CameraThread(Camera* camera){
     zmq::message_t msg;
     zmq::poll(camera->poll_ptr.get(), 1, 100);
 
-    try{
-      camera->socket_ptr->recv(msg/* , zmq::recv_flags::dontwait */);
-    }catch (std::exception& e){
-      ROS_INFO("Connection to %s terminated!", camera->name.c_str());
-      break;
+    if (camera->poll_ptr->revents & ZMQ_POLLIN){
+      try{
+        camera->socket_ptr->recv(msg);
+      }catch (std::exception& e){
+        ROS_INFO("Connection to %s terminated!", camera->name.c_str());
+        break;
+      }
+
+      /* ROS_INFO("%s: %d", camera->name.c_str(), msg.size()); // Debug */
+      this->PublishCameraStream(msg, camera);
     }
 
-    ROS_INFO("%s: %d", camera->name.c_str(), msg.size()); // Debug
-    this->PublishCameraStream(msg, camera);
   }
 }
 
