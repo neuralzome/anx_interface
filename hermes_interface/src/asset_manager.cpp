@@ -138,6 +138,7 @@ void AssetManager::Start(){
 
   // Start core assets
   this->phone_manager_.Start();
+  this->speaker_manager_.Start();
 
   // Subscribe to asset stream
   ROS_INFO("Subscribing...");
@@ -199,11 +200,11 @@ void AssetManager::AssetStateThread(){
       try{
         nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
         this->phone_manager_.OnStateChange(msg_json["phone"][0]);
+        this->speaker_manager_.OnStateChange(msg_json["speaker"]);
         if(this->non_core_asset_started_){
           this->imu_manager_.OnStateChange(msg_json["imu"]);
           this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
           this->camera_manager_.OnStateChange(msg_json["camera"]);
-          this->speaker_manager_.OnStateChange(msg_json["speaker"]);
         }
       }catch (std::exception& e){
         ROS_ERROR("Invalid msg received!");
@@ -308,7 +309,6 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
       this->imu_manager_.Start();
       this->usb_serial_manager_.Start();
       this->camera_manager_.Start();
-      this->speaker_manager_.Start();
 
       if(!this->asset_state_.empty()){
         try{
@@ -316,7 +316,6 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
           this->imu_manager_.OnStateChange(msg_json["imu"]);
           this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
           this->camera_manager_.OnStateChange(msg_json["camera"]);
-          this->speaker_manager_.OnStateChange(msg_json["speaker"]);
         }catch (std::exception& e){
           ROS_ERROR("Invalid msg received!");
           ROS_ERROR("msg [AssetStateThread (StartNonCoreAssetsCb)]: %s", this->asset_state_.c_str());
@@ -331,7 +330,6 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
       this->imu_manager_.Stop();
       this->usb_serial_manager_.Stop();
       this->camera_manager_.Stop();
-      this->speaker_manager_.Stop();
       res.success = true;
       this->non_core_asset_started_ = false;
     }else{
