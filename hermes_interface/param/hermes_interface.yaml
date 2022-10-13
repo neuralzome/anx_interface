@@ -26,10 +26,10 @@ imu:
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatFix.html
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatStatus.html
 gnss:
-  - name: "gnss"
+  - name: "gnss0"
     select:
-      id: "A4e2r"
-      fps: 10 
+      id: "0"
+      fps: 1
     
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CameraInfo.html
 # http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CompressedImage.html

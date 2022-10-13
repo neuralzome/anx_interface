@@ -43,6 +43,7 @@ add_executable(
   src/hermes_interface.cpp
   src/asset_manager.cpp
   src/imu_manager.cpp
+  src/gnss_manager.cpp
   src/usb_serial_manager.cpp
   src/camera_manager.cpp
   src/base64.cpp
