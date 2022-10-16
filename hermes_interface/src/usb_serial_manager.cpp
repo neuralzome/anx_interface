@@ -17,6 +17,9 @@ void UsbSerialManager::Start(){
   }
   ros::NodeHandle nh_private("~");
 
+  if (!nh_private.hasParam("usb_serial")){
+    return;
+  }
   // Populate usb_serial_ from parameter server
   XmlRpc::XmlRpcValue usb_serial_params;
   nh_private.getParam("usb_serial", usb_serial_params);

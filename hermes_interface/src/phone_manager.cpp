@@ -9,10 +9,6 @@ PhoneManager::PhoneManager(AssetManagerInterface* asset_manager){
 }
 
 void PhoneManager::Start(){
-  ros::NodeHandle nh_private("~");
-
-  XmlRpc::XmlRpcValue phone_params;
-  nh_private.getParam("phone", phone_params);
   this->phone_.socket_ptr = std::make_unique<zmq::socket_t>(
       this->ctx_,
       zmq::socket_type::sub

@@ -16,6 +16,9 @@ void ImuManager::Start(){
   }
   ros::NodeHandle nh_private("~");
 
+  if (!nh_private.hasParam("imu")){
+    return;
+  }
   // Populate imu_ from parameter server
   XmlRpc::XmlRpcValue imu_params;
   nh_private.getParam("imu", imu_params);
