@@ -1,8 +1,5 @@
-# hermes_ip: "192.168.43.1"
-hermes_ip: "192.168.1.5"
-
-linux_ip: "192.168.1.7"
-# linux_ip: "192.168.43.223"
+hermes_ip: "192.168.43.1"
+linux_ip: "192.168.43.1"
 
 subscribe_asset_port: 10000
 start_asset_port: 10001
@@ -31,47 +28,9 @@ gnss:
       id: "0"
       fps: 1
     
-# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CameraInfo.html
-# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/CompressedImage.html
-camera:
-  - name: "arducam0"
-    frame_id: "arducam0"
-    select:
-      id: "2"
-      stream:
-        fps: 30
-        width: 1280
-        height: 720
-        pixel_format: "mjpeg"
-      compression_quality: 80
-    camera_info_url: "file://home/ubuntu/.ros/flo/arducam0.yaml"
-  - name: "arducam1"
-    frame_id: "arducam1"
-    select:
-      id: "3"
-      stream:
-        fps: 30
-        width: 1280
-        height: 720
-        pixel_format: "mjpeg"
-      compression_quality: 80
-    camera_info_url: "file://home/ubuntu/.ros/flo/arducam1.yaml"
-
 # http://docs.ros.org/en/melodic/api/std_msgs/html/msg/String.html
 speaker:
   - name: "speaker"
     select:
       id: "0"
       language: "en"
-
-usb_serial:
-  - name: "arduino0"
-    select:
-      id: "0"
-      baud: 115200
-      delimiter: "\n"
-  - name: "arduino1"
-    select:
-      id: "1"
-      baud: 115200
-      delimiter: "\n"

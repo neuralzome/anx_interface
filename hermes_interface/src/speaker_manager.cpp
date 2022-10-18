@@ -18,6 +18,9 @@ void SpeakerManager::Start(){
   }
   ros::NodeHandle nh_private("~");
 
+  if (!nh_private.hasParam("speaker")){
+    return;
+  }
   // Populate usb_serial_ from parameter server
   XmlRpc::XmlRpcValue speaker_params;
   nh_private.getParam("speaker", speaker_params);

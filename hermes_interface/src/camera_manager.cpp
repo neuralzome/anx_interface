@@ -18,6 +18,9 @@ void CameraManager::Start(){
   }
   ros::NodeHandle nh_private("~");
 
+  if (!nh_private.hasParam("camera")){
+    return;
+  }
   // Populate camera_ from parameter server
   XmlRpc::XmlRpcValue camera_params;
   nh_private.getParam("camera", camera_params);

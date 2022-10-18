@@ -84,3 +84,14 @@ if(BUILD_TESTS)
     nlohmann_json::nlohmann_json
   )
 endif()
+
+install(TARGETS
+  hermes_interface
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  FILES_MATCHING PATTERN "*.launch")
+
+install(DIRECTORY param/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/param)
