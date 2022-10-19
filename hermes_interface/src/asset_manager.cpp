@@ -377,7 +377,7 @@ bool AssetManager::SignalCb(
   ROS_INFO("Sigal %d received!", req.signal.signal);
 
   nlohmann::json msg_req_json;
-  msg_req_json["signal"] = hermes_interface_msgs::Signal::SHUTDOWN;
+  msg_req_json["signal"] = req.signal.signal;
 
 
   this->send_signal_socket_.send(
@@ -392,7 +392,7 @@ bool AssetManager::SignalCb(
     
     try{
       nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-      if(!msg_res_json["success"]){
+      if(msg_res_json["success"]){
         ROS_INFO("Sigal %d sent!", req.signal.signal);
         res.success = true;
       }else{
