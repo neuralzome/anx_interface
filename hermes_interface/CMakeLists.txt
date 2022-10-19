@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   cv_bridge
   hermes_interface_msgs
+  nmea_msgs
 )
 
 find_package(cppzmq)
@@ -30,6 +31,7 @@ catkin_package(
     cv_bridge
     std_srvs
     hermes_interface_msgs
+    nmea_msgs
 )
 
 include_directories(
@@ -43,6 +45,7 @@ add_executable(
   src/hermes_interface.cpp
   src/asset_manager.cpp
   src/imu_manager.cpp
+  src/gnss_manager.cpp
   src/usb_serial_manager.cpp
   src/camera_manager.cpp
   src/base64.cpp

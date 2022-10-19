@@ -3,6 +3,7 @@
 
 AssetManager::AssetManager():
     imu_manager_(this),
+    gnss_manager_(this),
     usb_serial_manager_(this),
     camera_manager_(this),
     phone_manager_(this),
@@ -203,6 +204,7 @@ void AssetManager::AssetStateThread(){
         this->speaker_manager_.OnStateChange(msg_json["speaker"]);
         if(this->non_core_asset_started_){
           this->imu_manager_.OnStateChange(msg_json["imu"]);
+          this->gnss_manager_.OnStateChange(msg_json["gnss"]);
           this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
           this->camera_manager_.OnStateChange(msg_json["camera"]);
         }
@@ -307,6 +309,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
       res.message = "Already started!";
     }else{
       this->imu_manager_.Start();
+      this->gnss_manager_.Start();
       this->usb_serial_manager_.Start();
       this->camera_manager_.Start();
 
@@ -314,6 +317,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
         try{
           nlohmann::json msg_json = nlohmann::json::parse(this->asset_state_);
           this->imu_manager_.OnStateChange(msg_json["imu"]);
+          this->gnss_manager_.OnStateChange(msg_json["gnss"]);
           this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
           this->camera_manager_.OnStateChange(msg_json["camera"]);
         }catch (std::exception& e){
@@ -328,6 +332,7 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
   }else{
     if(this->non_core_asset_started_){
       this->imu_manager_.Stop();
+      this->gnss_manager_.Stop();
       this->usb_serial_manager_.Stop();
       this->camera_manager_.Stop();
       res.success = true;
@@ -372,7 +377,7 @@ bool AssetManager::SignalCb(
   ROS_INFO("Sigal %d received!", req.signal.signal);
 
   nlohmann::json msg_req_json;
-  msg_req_json["signal"] = hermes_interface_msgs::Signal::SHUTDOWN;
+  msg_req_json["signal"] = req.signal.signal;
 
 
   this->send_signal_socket_.send(
@@ -387,7 +392,7 @@ bool AssetManager::SignalCb(
     
     try{
       nlohmann::json msg_res_json = nlohmann::json::parse(msg_res.to_string());
-      if(!msg_res_json["success"]){
+      if(msg_res_json["success"]){
         ROS_INFO("Sigal %d sent!", req.signal.signal);
         res.success = true;
       }else{
