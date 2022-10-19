@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   cv_bridge
   hermes_interface_msgs
+  nmea_msgs
 )
 
 find_package(cppzmq)
@@ -30,6 +31,7 @@ catkin_package(
     cv_bridge
     std_srvs
     hermes_interface_msgs
+    nmea_msgs
 )
 
 include_directories(

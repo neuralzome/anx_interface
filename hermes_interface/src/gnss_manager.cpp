@@ -142,7 +142,7 @@ void GnssManager::GnssThread(Gnss* gnss){
         break;
       }
 
-      ROS_INFO("%s: %s", gnss->name.c_str(), msg.to_string().c_str()); // Debug
+      /* ROS_INFO("%s: %s", gnss->name.c_str(), msg.to_string().c_str()); // Debug */
       try{
         nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
         // publish nmea string to topic

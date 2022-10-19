@@ -41,4 +41,7 @@
 
   <build_depend>hermes_interface_msgs</build_depend>
   <exec_depend>hermes_interface_msgs</exec_depend>
+
+  <build_depend>nmea_msgs</build_depend>
+  <exec_depend>nmea_msgs</exec_depend>
 </package>
