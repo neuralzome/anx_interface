@@ -160,10 +160,8 @@ void AssetManager::Start(){
   }
   
   std::string identity = this->GetIdentity();
-  if(identity != ""){
-    ROS_INFO("identity: %s", identity.c_str());
-    nh_private.setParam("identity", identity);
-  }
+  ROS_INFO("identity: %s", identity.c_str());
+  nh_private.setParam("identity", identity);
 }
 
 int AssetManager::GetFreePort(){
