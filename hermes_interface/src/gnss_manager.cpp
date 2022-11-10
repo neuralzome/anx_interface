@@ -16,6 +16,9 @@ void GnssManager::Start(){
   }
   ros::NodeHandle nh_private("~");
 
+  if (!nh_private.hasParam("gnss")){
+    return;
+  }
   // Populate gnss_ from parameter server
   XmlRpc::XmlRpcValue gnss_params;
   nh_private.getParam("gnss", gnss_params);
