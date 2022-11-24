@@ -36,6 +36,9 @@
   <build_depend>image_transport</build_depend>
   <exec_depend>image_transport</exec_depend>
 
+  <build_depend>image_transport_plugins</build_depend>
+  <exec_depend>image_transport_plugins</exec_depend>
+
   <build_depend>cv_bridge</build_depend>
   <exec_depend>cv_bridge</exec_depend>
 
