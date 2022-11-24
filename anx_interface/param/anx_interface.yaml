@@ -24,13 +24,13 @@ speaker:
       id: "0"
       language: "en"
  
-http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Image.html
-http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/CameraInfo.html
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Image.html
+# http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/CameraInfo.html
 camera:
-  - name: "backcam"
-    frame_id: "backcam"
+  - name: "frontcam"
+    frame_id: "frontcam"
     select:
-      id: "0"
+      id: "1"
       stream:
         fps: 30
         width: 640
