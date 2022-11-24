@@ -2,7 +2,7 @@
 imu:
   - name: "imu0"
     select:
-      id: "in72e"
+      id: "0"
       fps: 30
     covariance:
       orientation_covariance_diagonal: [0.05, 0.004, 0.003]
@@ -23,3 +23,17 @@ speaker:
     select:
       id: "0"
       language: "en"
+ 
+http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Image.html
+http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/CameraInfo.html
+camera:
+  - name: "backcam"
+    frame_id: "backcam"
+    select:
+      id: "0"
+      stream:
+        fps: 30
+        width: 640
+        height: 480
+        pixel_format: "mjpeg"
+      compression_quality: 80
