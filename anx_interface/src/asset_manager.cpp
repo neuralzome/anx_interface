@@ -31,20 +31,48 @@ AssetManager::AssetManager():
       this
   );
 
-  nh_private.getParam("anx_ip", this->anx_ip_);
-  nh_private.getParam("linux_ip", this->linux_ip_);
-  nh_private.getParam("subscribe_asset_port", this->subscribe_asset_port_);
-  nh_private.getParam("start_asset_port", this->start_asset_port_);
-  nh_private.getParam("stop_asset_port", this->stop_asset_port_);
-  nh_private.getParam("asset_state_port", this->asset_state_port_);
-  nh_private.getParam("get_identity_port", this->get_identity_port_);
-  nh_private.getParam("send_signal_port", this->send_signal_port_);
+  // Get port info form parameter server
+  if(!nh_private.getParam("anx_ip", this->anx_ip_)){
+    this->anx_ip_ = "localhost";
+  }
+
+  if(!nh_private.getParam("linux_ip", this->linux_ip_)){
+    this->linux_ip_ = "localhost";
+  }
+
+  if(!nh_private.getParam("subscribe_asset_port", this->subscribe_asset_port_)){
+    this->subscribe_asset_port_ = 10000;
+  }
+
+  if(!nh_private.getParam("start_asset_port", this->start_asset_port_)){
+    this->start_asset_port_ = 10001;
+  }
+
+  if(!nh_private.getParam("stop_asset_port", this->stop_asset_port_)){
+    this->stop_asset_port_ = 10002;
+  }
+
+  if(!nh_private.getParam("asset_state_port", this->asset_state_port_)){
+    this->asset_state_port_ = 10003;
+  }
+
+  if(!nh_private.getParam("get_identity_port", this->get_identity_port_)){
+    this->get_identity_port_ = 10004;
+  }
+
+  if(!nh_private.getParam("send_signal_port", this->send_signal_port_)){
+    this->send_signal_port_ = 10005;
+  }
 
   // Initialize port pool
   std::vector<int> port_pool_range;
-  nh_private.getParam("port_pool_range", port_pool_range);
-  assert(port_pool_range.size() == 2);
-  assert(port_pool_range[1] > port_pool_range[0]);
+  if(!nh_private.getParam("port_pool_range", port_pool_range)){
+    port_pool_range.emplace_back(10010);
+    port_pool_range.emplace_back(10500);
+  }else{
+    assert(port_pool_range.size() == 2);
+    assert(port_pool_range[1] > port_pool_range[0]);
+  }
   for(int i=port_pool_range[0]; i<=port_pool_range[1]; i++){
     this->port_pool_.emplace_back(i);
   }

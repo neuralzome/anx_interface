@@ -6,8 +6,9 @@ SpeakerManager::SpeakerManager(AssetManagerInterface* asset_manager)
   this->asset_manager_ = asset_manager;
 
   ros::NodeHandle nh_private("~");
-  nh_private.getParam("anx_ip", this->anx_ip_);
-
+  if(!nh_private.getParam("anx_ip", this->anx_ip_)){
+    this->anx_ip_ = "localhost";
+  }
 }
 
 void SpeakerManager::Start(){
