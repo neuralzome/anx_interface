@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="anx_interface"
+        name="advanced_parameter_server"
+        type="advanced_parameter_server"
+        output="screen">
+    <rosparam file="$(find anx_interface)/test/advanced_parameter_server/imu.yaml" command="load" />
+    </node>
+</launch>

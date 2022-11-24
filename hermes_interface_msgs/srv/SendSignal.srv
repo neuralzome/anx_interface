@@ -1,4 +1,0 @@
-hermes_interface_msgs/Signal signal
----
-bool success   # indicate successful run of triggered signal
-string message # informational, e.g. for error messages

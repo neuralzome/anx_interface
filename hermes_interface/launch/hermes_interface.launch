@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node pkg="hermes_interface"
-        name="hermes_interface"
-        type="hermes_interface"
-        output="screen">
-      <rosparam file="$(find hermes_interface)/param/hermes_interface.yaml" command="load" />
-    </node>
-</launch>

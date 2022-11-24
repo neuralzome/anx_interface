@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="anx_interface"
+        name="anx_interface"
+        type="anx_interface"
+        output="screen">
+      <rosparam file="$(find anx_interface)/param/anx_interface.yaml" command="load" />
+    </node>
+</launch>

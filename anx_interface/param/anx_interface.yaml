@@ -1,0 +1,36 @@
+anx_ip: "192.168.43.1"
+linux_ip: "192.168.43.1"
+
+subscribe_asset_port: 10000
+start_asset_port: 10001
+stop_asset_port: 10002
+asset_state_port: 10003
+get_identity_port: 10004
+send_signal_port: 10005
+port_pool_range: [10010, 10500]
+
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/Imu.html
+imu:
+  - name: "imu0"
+    select:
+      id: "in72e"
+      fps: 30
+    covariance:
+      orientation_covariance_diagonal: [0.05, 0.004, 0.003]
+      angular_velocity_covariance_diagonal: [0.05, 0.004, 0.003]
+      linear_acceleration_covariance_diagonal: [0.05, 0.004, 0.003]
+
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatFix.html
+# http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/NavSatStatus.html
+gnss:
+  - name: "gnss0"
+    select:
+      id: "0"
+      fps: 1
+    
+# http://docs.ros.org/en/melodic/api/std_msgs/html/msg/String.html
+speaker:
+  - name: "speaker"
+    select:
+      id: "0"
+      language: "en"
