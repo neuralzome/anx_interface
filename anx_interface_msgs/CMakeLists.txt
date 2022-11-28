@@ -16,11 +16,11 @@ add_message_files(
   FILES
     Battery.msg
     Cpu.msg
+    Gpu.msg
     CpuFreq.msg
     PhoneState.msg
-    Ram.msg
+    Memory.msg
     Signal.msg
-    Storage.msg
     Thermal.msg
 )
 

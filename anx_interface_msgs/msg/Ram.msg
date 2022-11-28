@@ -1,2 +1,0 @@
-float32 cpu_ram_usage
-float32 total_ram

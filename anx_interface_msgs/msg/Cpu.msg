@@ -1,5 +1,4 @@
-CpuFreq[] cpu_freq
+CpuFreq[] freq
 String processor
 String architectures
 String type
-String renderer

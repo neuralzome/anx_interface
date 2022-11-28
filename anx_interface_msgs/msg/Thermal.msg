@@ -1,2 +1,2 @@
 String name
-float32 temp
+float32 temp # In degree celsius

@@ -1,9 +1,10 @@
 std_msgs/Header header
 
-Ram ram
-Storage storage
+float32 uptime # In milliseconds
+Memeory ram
+Memeory vram
+Memory storage
 Cpu cpu
-Thermal[] thermal
-float32 gpu_vram_usage
-float32 gpu_usage
-float32 uptime
+Gpu gpu
+Thermal[] thermals
+Battery battery
