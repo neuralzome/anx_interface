@@ -14,8 +14,14 @@ add_message_files(
   DIRECTORY
     msg
   FILES
-    Signal.msg
+    Battery.msg
+    Cpu.msg
+    CpuFreq.msg
     PhoneState.msg
+    Ram.msg
+    Signal.msg
+    Storage.msg
+    Thermal.msg
 )
 
 add_service_files(

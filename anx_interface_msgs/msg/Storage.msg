@@ -1,0 +1,2 @@
+float32 total_storage
+float32 available_storage
