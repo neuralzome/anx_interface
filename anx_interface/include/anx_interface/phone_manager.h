@@ -9,6 +9,9 @@
 
 #include <ros/ros.h>
 #include <anx_interface_msgs/PhoneState.h>
+#include <anx_interface_msgs/CpuFreq.h>
+#include <anx_interface_msgs/Thermal.h>
+
 #include <xmlrpcpp/XmlRpcValue.h>
 
 #include "anx_interface/asset_manager_interface.h"

@@ -1,4 +1,4 @@
 CpuFreq[] freq
-String processor
-String architectures
-String type
+string processor
+string architectures
+string type

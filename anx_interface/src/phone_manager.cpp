@@ -94,12 +94,46 @@ void PhoneManager::PhoneThread(){
         phone_state_ros_msg.header.stamp = ros::Time::now();
         phone_state_ros_msg.header.frame_id = "phone";
 
-        phone_state_ros_msg.charging = msg_json["charging"];
-        phone_state_ros_msg.cpu_ram_usage = msg_json["cpu_ram_usage"];
-        phone_state_ros_msg.cpu_usage = msg_json["cpu_usage"];
-        phone_state_ros_msg.cpu_temp = msg_json["cpu_temp"];
-        phone_state_ros_msg.gpu_vram_usage = msg_json["gpu_vram_usage"];
-        phone_state_ros_msg.gpu_usage = msg_json["gpu_usage"];
+        phone_state_ros_msg.uptime = msg_json["uptime"];
+
+        phone_state_ros_msg.ram.used = msg_json["ram"]["used"];
+        phone_state_ros_msg.ram.total = msg_json["ram"]["total"];
+
+        phone_state_ros_msg.vram.used = msg_json["vram"]["used"];
+        phone_state_ros_msg.vram.total = msg_json["vram"]["total"];
+
+        phone_state_ros_msg.storage.used = msg_json["storage"]["used"];
+        phone_state_ros_msg.storage.total = msg_json["storage"]["total"];
+
+        std::vector<anx_interface_msgs::CpuFreq> freqs;
+        for(int i=0; i<msg_json["cpu"]["freq"].size(); i++){
+          anx_interface_msgs::CpuFreq freq; 
+          freq.current = msg_json["cpu"]["freq"][i]["current"];
+          freq.min = msg_json["cpu"]["freq"][i]["min"];
+          freq.max = msg_json["cpu"]["freq"][i]["max"];
+          freqs.emplace_back(freq);
+        }
+        phone_state_ros_msg.cpu.freq = freqs;
+
+        phone_state_ros_msg.cpu.processor = msg_json["cpu"]["processor"];
+        phone_state_ros_msg.cpu.architectures = msg_json["cpu"]["architectures"];
+        phone_state_ros_msg.cpu.type = msg_json["cpu"]["type"];
+
+        phone_state_ros_msg.gpu.renderer = msg_json["gpu"]["renderer"];
+
+        std::vector<anx_interface_msgs::Thermal> thermals;
+        for(int i=0; i<msg_json["thermals"].size(); i++){
+          anx_interface_msgs::Thermal thermal;
+          thermal.name = msg_json["thermal"][i]["name"];
+          thermal.temp = msg_json["thermal"][i]["temp"];
+          thermals.emplace_back(thermal);
+        }
+        phone_state_ros_msg.thermals = thermals;
+        
+        phone_state_ros_msg.battery.charging = msg_json["battery"]["charging"];
+        phone_state_ros_msg.battery.level = msg_json["battery"]["level"];
+        phone_state_ros_msg.battery.current = msg_json["battery"]["current"];
+        phone_state_ros_msg.battery.voltage = msg_json["battery"]["voltage"];
 
         this->phone_.publisher.publish(phone_state_ros_msg);
       }catch (std::exception& e){
