@@ -124,8 +124,8 @@ void PhoneManager::PhoneThread(){
         std::vector<anx_interface_msgs::Thermal> thermals;
         for(int i=0; i<msg_json["thermals"].size(); i++){
           anx_interface_msgs::Thermal thermal;
-          thermal.name = msg_json["thermal"][i]["name"];
-          thermal.temp = msg_json["thermal"][i]["temp"];
+          thermal.name = msg_json["thermals"][i]["name"];
+          thermal.temp = msg_json["thermals"][i]["temp"];
           thermals.emplace_back(thermal);
         }
         phone_state_ros_msg.thermals = thermals;
