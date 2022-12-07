@@ -10,6 +10,14 @@ PhoneManager::PhoneManager(AssetManagerInterface* asset_manager){
   }
 }
 
+std::string PhoneManager::Name(){
+  return "phone";
+}
+
+bool PhoneManager::IsCore(){
+  return true;
+}
+
 void PhoneManager::Start(){
   this->phone_.socket_ptr = std::make_unique<zmq::socket_t>(
       this->ctx_,
@@ -37,6 +45,10 @@ void PhoneManager::Start(){
   this->phone_.thread_ptr = std::make_unique<std::thread>(
       &PhoneManager::PhoneThread, this
   );
+}
+
+void PhoneManager::Stop(){
+  ROS_WARN("Phone is a core asset, so cannot be stopped!");
 }
 
 void PhoneManager::OnStateChange(nlohmann::json state){
@@ -145,9 +157,10 @@ void PhoneManager::PhoneThread(){
 }
 
 bool PhoneManager::IsPresent(nlohmann::json& state){
-  if(state["id"] == this->phone_.id){
-    return true;
-  }else{
-    return false;
+  for(int i=0; i<state.size(); i++){
+    if(state["id"] == this->phone_.id){
+      return true;
+    }
   }
+  return false;
 }

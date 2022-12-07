@@ -14,6 +14,7 @@
 
 #include <xmlrpcpp/XmlRpcValue.h>
 
+#include "anx_interface/asset_interface.h"
 #include "anx_interface/asset_manager_interface.h"
 
 #include <zmq.hpp>
@@ -21,7 +22,7 @@
 
 #include <nlohmann/json.hpp>
 
-class PhoneManager{
+class PhoneManager : public AssetInterface{
 public:
   struct Phone{
     std::string id = "0";
@@ -38,8 +39,11 @@ public:
   };
 
   PhoneManager(AssetManagerInterface* asset_manager);
-  void Start();
-  void OnStateChange(nlohmann::json state);
+  std::string Name() override;
+  bool IsCore() override;
+  void Start() override;
+  void Stop() override;
+  void OnStateChange(nlohmann::json state) override;
 private:
   zmq::context_t ctx_;
   void PhoneThread();

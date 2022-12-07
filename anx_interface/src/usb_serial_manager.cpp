@@ -11,6 +11,14 @@ UsbSerialManager::UsbSerialManager(AssetManagerInterface* asset_manager)
   }
 }
 
+std::string UsbSerialManager::Name(){
+  return "usb_serial";
+}
+
+bool UsbSerialManager::IsCore(){
+  return false;
+}
+
 void UsbSerialManager::Start(){
   if(this->started_){
     return;

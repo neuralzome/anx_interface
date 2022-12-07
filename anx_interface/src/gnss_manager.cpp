@@ -10,6 +10,14 @@ GnssManager::GnssManager(AssetManagerInterface* asset_manager): started_(false){
   }
 }
 
+std::string GnssManager::Name(){
+  return "gnss";
+}
+
+bool GnssManager::IsCore(){
+  return false;
+}
+
 void GnssManager::Start(){
   if(this->started_){
     return;

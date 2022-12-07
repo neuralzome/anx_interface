@@ -18,6 +18,7 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
+#include "anx_interface/asset_interface.h"
 #include "anx_interface/asset_manager_interface.h"
 #include "anx_interface/base64.h"
 
@@ -26,7 +27,7 @@
 
 #include <nlohmann/json.hpp>
 
-class CameraManager{
+class CameraManager : public AssetInterface{
 public:
   struct Camera{
     std::string name;
@@ -58,9 +59,11 @@ public:
   };
 
   CameraManager(AssetManagerInterface* asset_manager);
-  void Start();
-  void Stop();
-  void OnStateChange(nlohmann::json state);
+  std::string Name() override;
+  bool IsCore() override;
+  void Start() override;
+  void Stop() override;
+  void OnStateChange(nlohmann::json state) override;
 private:
   zmq::context_t ctx_;
   void CameraThread(Camera* camera);

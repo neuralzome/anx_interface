@@ -8,6 +8,7 @@
 
 #include "anx_interface/asset_manager.h"
 
+// Singleton class
 class AnxInterface{
 public:
   static AnxInterface* GetInstance();

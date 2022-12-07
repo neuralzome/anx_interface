@@ -12,15 +12,15 @@
 #include <std_msgs/String.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
+#include "anx_interface/asset_interface.h"
 #include "anx_interface/asset_manager_interface.h"
-#include "ros/node_handle.h"
 
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
 
 #include <nlohmann/json.hpp>
 
-class UsbSerialManager{
+class UsbSerialManager : public AssetInterface{
 public:
   struct UsbSerial{
     std::string name;
@@ -45,9 +45,11 @@ public:
   };
 
   UsbSerialManager(AssetManagerInterface* asset_manager);
-  void Start();
-  void Stop();
-  void OnStateChange(nlohmann::json state);
+  std::string Name() override;
+  bool IsCore() override;
+  void Start() override;
+  void Stop() override;
+  void OnStateChange(nlohmann::json state) override;
   void ToUsbSerialCb(const std_msgs::String::ConstPtr& usb_serial_ros_msg_ptr, UsbSerial* usb_serial);
 private:
   zmq::context_t ctx_;

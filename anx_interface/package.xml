@@ -9,6 +9,7 @@
   </description>
 
   <maintainer email="aditya@flomobility.com">Aditya Shriwastava</maintainer>
+  <maintainer email="clay@flomobility.com">Clay</maintainer>
   <license>proprietary</license>
 
   <buildtool_depend>catkin</buildtool_depend>

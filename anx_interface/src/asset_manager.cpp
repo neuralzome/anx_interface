@@ -1,13 +1,6 @@
 #include "anx_interface/asset_manager.h"
-#include <chrono>
 
 AssetManager::AssetManager():
-    imu_manager_(this),
-    gnss_manager_(this),
-    usb_serial_manager_(this),
-    camera_manager_(this),
-    phone_manager_(this),
-    speaker_manager_(this),
     sub_asset_state_socket_(ctx_, zmq::socket_type::req),
     asset_state_socket_(ctx_, zmq::socket_type::sub),
     start_asset_socket_(ctx_, zmq::socket_type::req),
@@ -16,10 +9,19 @@ AssetManager::AssetManager():
     send_signal_socket_(ctx_, zmq::socket_type::req),
     subscribed_(false),
     non_core_asset_started_(false){
+  
+  this->assets_.emplace_back(std::make_unique<ImuManager>(this));
+  this->assets_.emplace_back(std::make_unique<GnssManager>(this));
+  this->assets_.emplace_back(std::make_unique<UsbSerialManager>(this));
+  this->assets_.emplace_back(std::make_unique<CameraManager>(this));
+  this->assets_.emplace_back(std::make_unique<PhoneManager>(this));
+  this->assets_.emplace_back(std::make_unique<SpeakerManager>(this));
+  
 
   ros::NodeHandle nh_private("~");
 
-  this->start_server_ = nh_private.advertiseService(
+  // Start ROS service servers
+  this->start_non_core_asset_server_ = nh_private.advertiseService(
       "start_non_core_assets",
       &AssetManager::StartNonCoreAssetsCb,
       this
@@ -31,7 +33,7 @@ AssetManager::AssetManager():
       this
   );
 
-  // Get port info form parameter server
+  // Get port and IP info form parameter server
   if(!nh_private.getParam("anx_ip", this->anx_ip_)){
     this->anx_ip_ = "localhost";
   }
@@ -166,8 +168,7 @@ void AssetManager::Start(){
   );
 
   // Start core assets
-  this->phone_manager_.Start();
-  this->speaker_manager_.Start();
+  this->StartStopAsset(true, true);
 
   // Subscribe to asset stream
   ROS_INFO("Subscribing...");
@@ -223,16 +224,15 @@ void AssetManager::AssetStateThread(){
       this->asset_state_socket_.recv(msg);
 
       this->asset_state_ = msg.to_string();
-      ROS_INFO(this->asset_state_.c_str()); // Debug
+
       try{
         nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
-        this->phone_manager_.OnStateChange(msg_json["phone"][0]);
-        this->speaker_manager_.OnStateChange(msg_json["speaker"]);
+        ROS_INFO(msg_json.dump(1).c_str());
+
+        this->OnStateChangeToAssets(msg_json, true);
+
         if(this->non_core_asset_started_){
-          this->imu_manager_.OnStateChange(msg_json["imu"]);
-          this->gnss_manager_.OnStateChange(msg_json["gnss"]);
-          this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
-          this->camera_manager_.OnStateChange(msg_json["camera"]);
+          this->OnStateChangeToAssets(msg_json, false);
         }
       }catch (std::exception& e){
         ROS_ERROR("Invalid msg received!");
@@ -275,7 +275,6 @@ bool AssetManager::Subscribe(bool subscribe){
     ROS_WARN("[Subscribe] %s", e.what());
     return false;
   }
-
 }
 
 bool AssetManager::StartAsset(nlohmann::json msg){
@@ -331,21 +330,19 @@ bool AssetManager::StopAsset(nlohmann::json msg){
 bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_srvs::SetBool::Response &res){
   if(req.data){
     if(this->non_core_asset_started_){
+      // CASE 1: Request to start non core asset and non core asset has already started
       res.success = true;
       res.message = "Already started!";
+      // CASE 1 END
     }else{
-      this->imu_manager_.Start();
-      this->gnss_manager_.Start();
-      this->usb_serial_manager_.Start();
-      this->camera_manager_.Start();
+      // CASE 2: Request to start non core asset and non core asset has not started
+      // Start non core assets
+      this->StartStopAsset(true, false);
 
       if(!this->asset_state_.empty()){
         try{
           nlohmann::json msg_json = nlohmann::json::parse(this->asset_state_);
-          this->imu_manager_.OnStateChange(msg_json["imu"]);
-          this->gnss_manager_.OnStateChange(msg_json["gnss"]);
-          this->usb_serial_manager_.OnStateChange(msg_json["usb_serial"]);
-          this->camera_manager_.OnStateChange(msg_json["camera"]);
+          this->OnStateChangeToAssets(msg_json, false);
         }catch (std::exception& e){
           ROS_ERROR("Invalid msg received!");
           ROS_ERROR("msg [AssetStateThread (StartNonCoreAssetsCb)]: %s", this->asset_state_.c_str());
@@ -354,18 +351,21 @@ bool AssetManager::StartNonCoreAssetsCb(std_srvs::SetBool::Request  &req, std_sr
 
       res.success = true;
       this->non_core_asset_started_ = true;
+      // CASE 2 END
     }
   }else{
     if(this->non_core_asset_started_){
-      this->imu_manager_.Stop();
-      this->gnss_manager_.Stop();
-      this->usb_serial_manager_.Stop();
-      this->camera_manager_.Stop();
+      // CASE 3: Request to stop non core asset and non core asset is running
+      // Stop non core assets
+      this->StartStopAsset(false, false);
       res.success = true;
       this->non_core_asset_started_ = false;
+      // CASE 3 END
     }else{
+      // CASE 4: Request to stop non core asset and non core asset has already stopped
       res.success = true;
       res.message = "Already stopped!";
+      // CASE 4 END
     }
   }
   return true;
@@ -437,4 +437,24 @@ bool AssetManager::SignalCb(
   }
 
   return true;
+}
+
+void AssetManager::OnStateChangeToAssets(const nlohmann::json& msg_json, bool core){
+  for(int i=0; i<this->assets_.size(); i++){
+    if(this->assets_[i]->IsCore() == core){
+      this->assets_[i]->OnStateChange(msg_json[this->assets_[i]->Name()]);
+    }
+  }
+}
+
+void AssetManager::StartStopAsset(bool start, bool core){
+  for(int i=0; i<this->assets_.size(); i++){
+    if(this->assets_[i]->IsCore() == core){
+      if(start){
+        this->assets_[i]->Start();
+      }else{
+        this->assets_[i]->Stop();
+      }
+    }
+  }
 }

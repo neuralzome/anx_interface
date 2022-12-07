@@ -12,6 +12,7 @@
 #include <std_msgs/String.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
+#include "anx_interface/asset_interface.h"
 #include "anx_interface/asset_manager_interface.h"
 
 #include <zmq.hpp>
@@ -19,7 +20,7 @@
 
 #include <nlohmann/json.hpp>
 
-class SpeakerManager{
+class SpeakerManager : public AssetInterface{
 public:
   struct Speaker{
     std::string name;
@@ -38,9 +39,11 @@ public:
   };
 
   SpeakerManager(AssetManagerInterface* asset_manager);
-  void Start();
-  void Stop();
-  void OnStateChange(nlohmann::json state);
+  std::string Name() override;
+  bool IsCore() override;
+  void Start() override;
+  void Stop() override;
+  void OnStateChange(nlohmann::json state) override;
   void ToSpeakerCb(const std_msgs::String::ConstPtr& speaker_msg_ptr, Speaker* speaker);
 private:
   zmq::context_t ctx_;

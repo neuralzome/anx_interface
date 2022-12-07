@@ -10,6 +10,14 @@ ImuManager::ImuManager(AssetManagerInterface* asset_manager): started_(false){
   }
 }
 
+std::string ImuManager::Name(){
+  return "imu";
+}
+
+bool ImuManager::IsCore(){
+  return false;
+}
+
 void ImuManager::Start(){
   if(this->started_){
     return;

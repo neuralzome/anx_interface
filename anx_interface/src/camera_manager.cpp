@@ -9,7 +9,14 @@ CameraManager::CameraManager(AssetManagerInterface* asset_manager)
   if(!nh_private.getParam("anx_ip", this->anx_ip_)){
     this->anx_ip_ = "localhost";
   }
+}
 
+std::string CameraManager::Name(){
+  return "camera";
+}
+
+bool CameraManager::IsCore(){
+  return false;
 }
 
 void CameraManager::Start(){

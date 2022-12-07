@@ -11,6 +11,14 @@ SpeakerManager::SpeakerManager(AssetManagerInterface* asset_manager)
   }
 }
 
+std::string SpeakerManager::Name(){
+  return "speaker";
+}
+
+bool SpeakerManager::IsCore(){
+  return true;
+}
+
 void SpeakerManager::Start(){
   if(this->started_){
     return;
@@ -61,30 +69,34 @@ void SpeakerManager::Start(){
 }
 
 void SpeakerManager::Stop(){
-  if(this->started_){
-    this->started_ = false;
-  }else{
-    return;
-  }
-  for(auto& speaker : this->speaker_){
-    if(speaker.streaming){
-      nlohmann::json stop_msg_json;
-      stop_msg_json["asset"] = {
-        {"type", "speaker"},
-        {"id", speaker.select.id}
-      };
-      if(this->asset_manager_->StopAsset(stop_msg_json)){
-        speaker.streaming = false;
-        ROS_INFO("%s stopped!", speaker.name.c_str());
-      }else{
-        ROS_INFO("Failed to stop %s!", speaker.name.c_str());
-      }
-    }
-
-    this->asset_manager_->ReturnFreePort(speaker.sub_port);
-  }
-  this->speaker_.clear();
+  ROS_WARN("Speaker is a core asset, so cannot be stopped!");
 }
+
+/* void SpeakerManager::Stop(){ */
+/*   if(this->started_){ */
+/*     this->started_ = false; */
+/*   }else{ */
+/*     return; */
+/*   } */
+/*   for(auto& speaker : this->speaker_){ */
+/*     if(speaker.streaming){ */
+/*       nlohmann::json stop_msg_json; */
+/*       stop_msg_json["asset"] = { */
+/*         {"type", "speaker"}, */
+/*         {"id", speaker.select.id} */
+/*       }; */
+/*       if(this->asset_manager_->StopAsset(stop_msg_json)){ */
+/*         speaker.streaming = false; */
+/*         ROS_INFO("%s stopped!", speaker.name.c_str()); */
+/*       }else{ */
+/*         ROS_INFO("Failed to stop %s!", speaker.name.c_str()); */
+/*       } */
+/*     } */
+
+/*     this->asset_manager_->ReturnFreePort(speaker.sub_port); */
+/*   } */
+/*   this->speaker_.clear(); */
+/* } */
 
 void SpeakerManager::OnStateChange(nlohmann::json state){
   /* ROS_INFO(state.dump().c_str()); // Debug */
@@ -162,7 +174,6 @@ bool SpeakerManager::IsPresent(Speaker& speaker, nlohmann::json& state){
         ) != state[i]["language"].end()){
       /* ROS_INFO(state[i].dump().c_str()); // Debug */
       return true;
-    }else{
     }
   }
   return false;

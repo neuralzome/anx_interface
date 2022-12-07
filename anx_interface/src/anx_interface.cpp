@@ -1,5 +1,4 @@
 #include "anx_interface/anx_interface.h"
-#include "anx_interface/asset_manager.h"
 
 std::unique_ptr<AnxInterface> AnxInterface::instance_ = nullptr;
 
