@@ -441,7 +441,7 @@ bool AssetManager::SignalCb(
 
 void AssetManager::OnStateChangeToAssets(const nlohmann::json& msg_json, bool core){
   for(int i=0; i<this->assets_.size(); i++){
-    if(this->assets_[i]->IsCore() == core){
+    if(this->assets_[i]->IsCore() == core && msg_json.contains(this->assets_[i]->Name())){
       this->assets_[i]->OnStateChange(msg_json[this->assets_[i]->Name()]);
     }
   }

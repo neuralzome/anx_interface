@@ -158,7 +158,7 @@ void PhoneManager::PhoneThread(){
 
 bool PhoneManager::IsPresent(nlohmann::json& state){
   for(int i=0; i<state.size(); i++){
-    if(state["id"] == this->phone_.id){
+    if(state[i]["id"] == this->phone_.id){
       return true;
     }
   }
