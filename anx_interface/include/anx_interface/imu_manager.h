@@ -9,6 +9,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/MagneticField.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
 #include "anx_interface/asset_interface.h"
@@ -44,6 +45,8 @@ public:
     int seq = 0;
     ros::NodeHandle nh;
     ros::Publisher publisher;
+    ros::Publisher raw_publisher;
+    ros::Publisher magnetic_field_publisher;
   };
 
   ImuManager(AssetManagerInterface* asset_manager);
