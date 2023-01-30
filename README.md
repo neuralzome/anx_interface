@@ -1,21 +1,14 @@
-# anx_interface 
-> Implements [anx_api](https://github.com/flomobility/api_docs/tree/v0.1.2)
+# anx_interface
 
-## Class Diagram
-```mermaid
-classDiagram
-AnxInterface *-- AssetManager
-
-AssetManager *-- CameraManager
-AssetManager *-- GnssManager
-AssetManager *-- ImuManager
-AssetManager *-- PhoneManager
-AssetManager *-- SpeakerManager
-AssetManager *-- UsbSerialManager
+```
+anx_mock (python) <--anx_api--> anx_interface (python + cpp)
+                                      ^
+                                      |
+                                      +-----------> anx_interface_ros
+                                      |
+                                      +-----------> anx_interface_ros2
 ```
 
-## Style Guide
-* For CPP:
-  + [Google CPP Style Guide](https://google.github.io/styleguide/cppguide.html)
-* For Python:
-  + [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html) 
+## anx_mock
+**Purpose:** Development and testing of anx_interface, anx_interface_ros and anx_interface_ros2
+
