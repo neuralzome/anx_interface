@@ -76,6 +76,10 @@ void ImuManager::Start(){
     imu->socket_ptr->set(zmq::sockopt::subscribe, ""); 
 
     imu->publisher = this->imu_.back().nh.advertise<sensor_msgs::Imu>(this->imu_.back().name, 10); 
+    imu->raw_publisher = this->imu_.back().nh.advertise<sensor_msgs::Imu>(
+      this->imu_.back().name + "/raw", 10);
+    imu->magnetic_field_publisher = this->imu_.back().nh.advertise<sensor_msgs::MagneticField>(
+      this->imu_.back().name + "/raw/magnetometer", 10);
   }
 
   for(auto& imu : this->imu_){
@@ -170,36 +174,66 @@ void ImuManager::ImuThread(Imu* imu){
 
       /* ROS_INFO("%s: %s", imu->name.c_str(), msg.to_string().c_str()); // Debug */
       try{
-        nlohmann::json msg_json = nlohmann::json::parse(msg.to_string());
+        nlohmann::json imu_msg_json = nlohmann::json::parse(msg.to_string());
+        nlohmann::json filtered_msg_json = imu_msg_json["filtered"];
+        nlohmann::json raw_msg_json = imu_msg_json["raw"];
+
         sensor_msgs::Imu imu_ros_msg;
+        sensor_msgs::Imu raw_imu_ros_msg;
+        sensor_msgs::MagneticField magnetic_field_ros_msg;
 
         imu_ros_msg.header.seq = imu->seq++;
         imu_ros_msg.header.stamp = ros::Time::now();
         imu_ros_msg.header.frame_id = imu->name;
+        
+        raw_imu_ros_msg.header.seq = imu->seq++;
+        raw_imu_ros_msg.header.stamp = ros::Time::now();
+        raw_imu_ros_msg.header.frame_id = imu->name;
 
-        imu_ros_msg.orientation.x = msg_json["q"][0];
-        imu_ros_msg.orientation.y = msg_json["q"][1];
-        imu_ros_msg.orientation.z = msg_json["q"][2];
-        imu_ros_msg.orientation.w = msg_json["q"][3];
+        magnetic_field_ros_msg.header.seq = imu->seq++;
+        magnetic_field_ros_msg.header.stamp = ros::Time::now();
+        magnetic_field_ros_msg.header.frame_id = imu->name;
+
+        imu_ros_msg.orientation.x = filtered_msg_json["q"][0];
+        imu_ros_msg.orientation.y = filtered_msg_json["q"][1];
+        imu_ros_msg.orientation.z = filtered_msg_json["q"][2];
+        imu_ros_msg.orientation.w = filtered_msg_json["q"][3];
         imu_ros_msg.orientation_covariance[0] = imu->covariance.orientation_covariance_diagonal[0];
         imu_ros_msg.orientation_covariance[4] = imu->covariance.orientation_covariance_diagonal[1];
         imu_ros_msg.orientation_covariance[8] = imu->covariance.orientation_covariance_diagonal[2];
 
-        imu_ros_msg.angular_velocity.x = msg_json["w"][0];
-        imu_ros_msg.angular_velocity.y = msg_json["w"][1];
-        imu_ros_msg.angular_velocity.z = msg_json["w"][2];
+        imu_ros_msg.angular_velocity.x = filtered_msg_json["w"][0];
+        imu_ros_msg.angular_velocity.y = filtered_msg_json["w"][1];
+        imu_ros_msg.angular_velocity.z = filtered_msg_json["w"][2];
         imu_ros_msg.angular_velocity_covariance[0] = imu->covariance.angular_velocity_covariance_diagonal[0];
         imu_ros_msg.angular_velocity_covariance[4] = imu->covariance.angular_velocity_covariance_diagonal[1];
         imu_ros_msg.angular_velocity_covariance[8] = imu->covariance.angular_velocity_covariance_diagonal[2];
 
-        imu_ros_msg.linear_acceleration.x = msg_json["a"][0];
-        imu_ros_msg.linear_acceleration.y = msg_json["a"][1];
-        imu_ros_msg.linear_acceleration.z = msg_json["a"][2];
+        imu_ros_msg.linear_acceleration.x = filtered_msg_json["a"][0];
+        imu_ros_msg.linear_acceleration.y = filtered_msg_json["a"][1];
+        imu_ros_msg.linear_acceleration.z = filtered_msg_json["a"][2];
         imu_ros_msg.linear_acceleration_covariance[0] = imu->covariance.linear_acceleration_covariance_diagonal[0];
         imu_ros_msg.linear_acceleration_covariance[4] = imu->covariance.linear_acceleration_covariance_diagonal[1];
         imu_ros_msg.linear_acceleration_covariance[8] = imu->covariance.linear_acceleration_covariance_diagonal[2];
 
+
+        // populate raw msg
+        raw_imu_ros_msg.angular_velocity.x = raw_msg_json["w"][0];
+        raw_imu_ros_msg.angular_velocity.y = raw_msg_json["w"][1];
+        raw_imu_ros_msg.angular_velocity.z = raw_msg_json["w"][2];
+
+        raw_imu_ros_msg.linear_acceleration.x = raw_msg_json["a"][0];
+        raw_imu_ros_msg.linear_acceleration.y = raw_msg_json["a"][1];
+        raw_imu_ros_msg.linear_acceleration.z = raw_msg_json["a"][2];
+
+        // populate magnetic field
+        magnetic_field_ros_msg.magnetic_field.x = raw_msg_json["mu"][0];
+        magnetic_field_ros_msg.magnetic_field.y = raw_msg_json["mu"][1];
+        magnetic_field_ros_msg.magnetic_field.z = raw_msg_json["mu"][2];
+
         imu->publisher.publish(imu_ros_msg);
+        imu->raw_publisher.publish(raw_imu_ros_msg);
+        imu->magnetic_field_publisher.publish(magnetic_field_ros_msg);
 
       }catch (std::exception& e){
         ROS_ERROR("Invalid msg received!");
