@@ -2,13 +2,13 @@
 
 from anx_interface import Anx
 
-def device_state_cb(device_state):
-    print(device_state)
+def gnss_cb(gnss_date):
+    print(gnss_date)
 
 def main():
     anx = Anx()
 
-    anx.register_device_state_cb(device_state_cb)
+    anx.start_device_gnss(cb=gnss_cb)
 
     anx.wait()
 

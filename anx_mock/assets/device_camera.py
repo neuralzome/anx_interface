@@ -17,16 +17,14 @@ class DeviceCamera:
         self.width = None
         self.height = None
         self.pixel_format = None
-        self.port = None
+        self.port = 10005
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
 
-    def start(self, fps, width, height, pixel_format, port):
+    def start(self, fps, width, height, pixel_format):
         if self.active:
             if not self.stop():
-                return True
-            else:
                 return False
 
         self.active = True
@@ -35,10 +33,10 @@ class DeviceCamera:
         self.width = width
         self.height = height
         self.pixel_format = pixel_format
-        self.port = port
-        self.socket.bind(f"tcp://*:{self.port}")
+        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
 
         self.executor.submit(self.data_thread)
+        print("\tdevice_camera started!!")
         return True
 
     def stop(self):
@@ -46,13 +44,13 @@ class DeviceCamera:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://localhost:{self.port}")
+        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
         self.frame_index = None
         self.fps = None
         self.width = None
         self.height = None
         self.pixel_format = None
-        self.port = None
+        print("\tdevice_camera stopped!!")
         return True
 
     def get_device_camera_stream(self, fps, width, height, pixel_format):
@@ -63,13 +61,13 @@ class DeviceCamera:
         device_camera_stream.pixel_format = pixel_format
         return device_camera_stream
 
-    def get_select(self):
-        msg = assets_pb2.DeviceCameraSelect()
-        msg.camera_streams.append(self.get_device_camera_stream(
+    def get_camera_streams(self):
+        camera_streams = []
+        camera_streams.append(self.get_device_camera_stream(
             30, 480, 640,
             assets_pb2.DeviceCameraStream.PixelFormat.MJPEG
         ))
-        return msg
+        return camera_streams
 
     def get_data(self):
         msg = assets_pb2.CameraData()

@@ -12,22 +12,22 @@ class DeviceImu:
         self.executor = executor
         self.active = False
         self.fps = None
-        self.port = None
+        self.port = 10003
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
 
-    def start(self, fps, port):
+    def start(self, fps):
         if self.active:
             if not self.stop():
                 return False
 
         self.active = True
         self.fps = fps
-        self.port = port
-        self.socket.bind(f"tcp://*:{self.port}")
+        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
 
         self.executor.submit(self.data_thread)
+        print("\tdevice_imu started!!")
         return True
 
     def stop(self):
@@ -35,15 +35,13 @@ class DeviceImu:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://localhost:{self.port}")
+        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
         self.fps = None
-        self.port = None
+        print("\tdevice_imu stopped!!")
         return True
 
-    def get_select(self):
-        msg = assets_pb2.DeviceImuSelect()
-        msg.fps.extend([1, 5, 10, 20, 50, 100, 150, 200])
-        return msg
+    def get_fps(self):
+        return [1, 5, 10, 20, 50, 100, 150, 200]
 
     def get_data(self):
         msg = assets_pb2.ImuData()
@@ -67,7 +65,6 @@ class DeviceImu:
         msg.raw.magnetic_field_in_micro_tesla.x = -20 + random.random()
         msg.raw.magnetic_field_in_micro_tesla.x = random.random()
         return msg
-
 
     def data_thread(self):
         rate = Rate(self.fps)

@@ -13,6 +13,7 @@ pyzmq = "~22.3.0"
 protobuf = "~3.19.0"
 opencv-python = "^4.7.0.68"
 numpy = "^1.24.2"
+pillow = "^9.4.0"
 
 
 [build-system]

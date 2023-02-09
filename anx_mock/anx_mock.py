@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import time
 from concurrent.futures import ThreadPoolExecutor
 import signal
@@ -23,12 +21,12 @@ class AnxMock:
         self.ctx = zmq.Context()
 
         self.socket_rpc = self.ctx.socket(zmq.REP)
-        self.socket_rpc.bind("tcp://*:10002")
+        self.socket_rpc.bind("tcp://127.0.0.1:10002")
         self.poller_rpc = zmq.Poller()
         self.poller_rpc.register(self.socket_rpc, zmq.POLLIN)
 
         self.socket_pub_state = self.ctx.socket(zmq.PUB)
-        self.socket_pub_state.bind("tcp://*:10001")
+        self.socket_pub_state.bind("tcp://127.0.0.1:10001")
 
         self.rpc = {
                 b"GetAssetState": self.get_asset_state,
@@ -70,12 +68,15 @@ class AnxMock:
 
     def signal_handler(self, sig, fram):
         self.active = False
+        self.device_imu.stop()
+        self.device_gnss.stop()
+        self.device_camera.stop()
         print("\nAnxMock stopped running")
 
     def pub_state(self):
         msg = device_pb2.DeviceState()
         GB = 1024*1024*1024
-        MB = 1024*1024
+        MB = 1024*102
         msg.uptime_ms = 0
         msg.ram.used=200*MB
         msg.ram.total=4*GB
@@ -125,9 +126,10 @@ class AnxMock:
 
     def get_asset_state(self, req_bytes):
         rep = assets_pb2.AssetState()
-        rep.imu = self.device_imu.get_select()
-        rep.gnss = self.device_gnss.get_select()
-        rep.camera = self.device_camera.get_select()
+
+        rep.imu.fps.extend(self.device_imu.get_fps())
+        rep.gnss.available = True
+        rep.camera.camera_streams.extend(self.device_camera.get_camera_streams())
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
@@ -137,17 +139,14 @@ class AnxMock:
         req.ParseFromString(req_bytes)
 
         rep = common_pb2.StdResponse()
-        rep.success = self.device_imu.start(req.fps, req.port)
+        rep.success = self.device_imu.start(req.fps)
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
 
     def start_device_gnss(self, req_bytes):
-        req = assets_pb2.StartDeviceGnss()
-        req.ParseFromString(req_bytes)
-
         rep = common_pb2.StdResponse()
-        rep.success = self.device_gnss.start(req.port)
+        rep.success = self.device_gnss.start()
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
@@ -161,8 +160,7 @@ class AnxMock:
             req.camera_stream.fps,
             req.camera_stream.width,
             req.camera_stream.height,
-            req.camera_stream.pixel_format,
-            req.port
+            req.camera_stream.pixel_format
         )
 
         rep_bytes = rep.SerializeToString()

@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import zmq
 from anx_interface.proto import assets_pb2, device_pb2, common_pb2
 
-class DeviceImu:
+class DeviceGnss:
     def __init__(self, executor):
         self.executor = executor
 
@@ -12,7 +12,7 @@ class DeviceImu:
         self.socket = self.ctx.socket(zmq.SUB)
         self.poller = zmq.Poller()
 
-        self.port = 10003
+        self.port = 10004
         self.cb = None
         self.data = None
         self.active = False
@@ -46,8 +46,9 @@ class DeviceImu:
             events = self.poller.poll(100)
             if events:
                 msg_bytes = self.socket.recv()
-                msg = assets_pb2.ImuData()
+                msg = assets_pb2.GnssData()
                 msg.ParseFromString(msg_bytes)
-                self.data = msg
+                self.data = msg.nmea
                 if self.cb is not None:
                     self.cb(self.data)
+

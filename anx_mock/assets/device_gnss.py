@@ -11,21 +11,21 @@ class DeviceGnss:
         self.executor = executor
         self.active = False
         self.fps = 1
-        self.port = None
+        self.port = 10004
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
 
-    def start(self, port):
+    def start(self):
         if self.active:
             if not self.stop():
                 return False
 
         self.active = True
-        self.port = port
-        self.socket.bind(f"tcp://*:{self.port}")
+        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
 
         self.executor.submit(self.data_thread)
+        print("\tdevice_gnss started!!")
         return True
 
     def stop(self):
@@ -33,14 +33,9 @@ class DeviceGnss:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://localhost:{self.port}")
-        self.port = None
+        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
+        print("\tdevice_gnss stopped!!")
         return True
-
-    def get_select(self):
-        msg = assets_pb2.DeviceGnssSelect()
-        msg.available = True
-        return msg
 
     def get_data(self):
         msg = assets_pb2.GnssData()

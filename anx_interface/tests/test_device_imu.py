@@ -2,13 +2,13 @@
 
 from anx_interface import Anx
 
-def device_state_cb(device_state):
-    print(device_state)
+def imu_cb(imu_date):
+    print(imu_date)
 
 def main():
     anx = Anx()
 
-    anx.register_device_state_cb(device_state_cb)
+    anx.start_device_imu(fps=10, cb=imu_cb)
 
     anx.wait()
 
