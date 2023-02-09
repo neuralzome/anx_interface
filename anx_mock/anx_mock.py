@@ -2,29 +2,19 @@
 
 import time
 from concurrent.futures import ThreadPoolExecutor
-from enum import Enum
 import signal
 
 from progress.spinner import PixelSpinner as Spinner
-import click
 import zmq
-from anx_mock.proto import common_pb2, device_pb2
+
+from anx_mock.utils import Rate
+from anx_mock.proto import assets_pb2, common_pb2, device_pb2
+from anx_mock.assets.device_imu import DeviceImu
+from anx_mock.assets.device_gnss import DeviceGnss
+from anx_mock.assets.device_camera import DeviceCamera
 
 class AnxMock:
-    def __init__(
-        self,
-        dummy_device_imu: bool,
-        dummy_device_gnss,
-        dummy_device_camera,
-        number_usb_camera,
-        number_usb_serial
-    ):
-        self.dummy_device_imu_present = dummy_device_imu
-        self.dummy_device_gnss_present = dummy_device_gnss
-        self.dummy_device_camera_present = dummy_device_camera
-        self.number_usb_camera = number_usb_camera
-        self.number_usb_serial = number_usb_serial
-
+    def __init__(self):
         self.active = False
         signal.signal(signal.SIGINT, self.signal_handler)
 
@@ -41,9 +31,26 @@ class AnxMock:
         self.socket_pub_state.bind("tcp://*:10001")
 
         self.rpc = {
+                b"GetAssetState": self.get_asset_state,
+                b"StartDeviceImu": self.start_device_imu,
+                b"StartDeviceGnss": self.start_device_gnss,
+                b"StartDeviceCamera": self.start_device_camera,
+                b"StopDeviceImu": self.stop_device_imu,
+                b"StopDeviceGnss": self.stop_device_gnss,
+                b"StopDeviceCamera": self.stop_device_camera,
                 b"GetImeiNumbers": self.get_imei_numbers,
-                b"GetPhoneNumbers": self.get_phone_numbers
+                b"GetPhoneNumbers": self.get_phone_numbers,
+                b"Shutdown": self.shutdown,
+                b"Reboot": self.reboot,
+                b"Tts": self.tts,
+                b"GetAvailableLanguages": self.get_available_languages,
+                b"IsTtsBusy": self.is_tts_busy,
+                b"SetWifi": self.set_wifi
         }
+
+        self.device_imu = DeviceImu(self.executor)
+        self.device_gnss = DeviceGnss(self.executor)
+        self.device_camera = DeviceCamera(self.executor)
 
     # Blocking call
     def start(self):
@@ -100,49 +107,148 @@ class AnxMock:
         msg.battery.current_mA = 253.2
         msg.battery.voltage_mV = 3862.2
 
+        rate = Rate(10)
         while self.active:
             msg.uptime_ms += 100
 
             msg_bytes = msg.SerializeToString()
             self.socket_pub_state.send(msg_bytes)
-            time.sleep(0.1)
+            rate.sleep()
 
     def rpc_handler(self):
         while self.active:
             events = self.poller_rpc.poll(100)
             if events:
-                name, req = self.socket_rpc.recv_multipart()
+                name, req_bytes = self.socket_rpc.recv_multipart()
                 if name in self.rpc.keys():
-                    self.rpc[name](req)
+                    self.rpc[name](req_bytes)
 
-    def get_imei_numbers(self, req):
+    def get_asset_state(self, req_bytes):
+        rep = assets_pb2.AssetState()
+        rep.imu = self.device_imu.get_select()
+        rep.gnss = self.device_gnss.get_select()
+        rep.camera = self.device_camera.get_select()
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def start_device_imu(self, req_bytes):
+        req = assets_pb2.StartDeviceImu()
+        req.ParseFromString(req_bytes)
+
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_imu.start(req.fps, req.port)
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def start_device_gnss(self, req_bytes):
+        req = assets_pb2.StartDeviceGnss()
+        req.ParseFromString(req_bytes)
+
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_gnss.start(req.port)
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def start_device_camera(self, req_bytes):
+        req = assets_pb2.StartDeviceCamera()
+        req.ParseFromString(req_bytes)
+
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_camera.start(
+            req.camera_stream.fps,
+            req.camera_stream.width,
+            req.camera_stream.height,
+            req.camera_stream.pixel_format,
+            req.port
+        )
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def stop_device_imu(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_imu.stop()
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def stop_device_gnss(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_gnss.stop()
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def stop_device_camera(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = self.device_camera.stop()
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def get_imei_numbers(self, req_bytes):
         rep = device_pb2.GetImeiNumbersResponse()
         rep.imeis.extend(["869781035780142", "869781035780159"])
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
 
-    def get_phone_numbers(self, msg):
+    def get_phone_numbers(self, req_bytes):
         rep = device_pb2.GetPhoneNumbersResponse()
         rep.phone_numbers.extend(["+917320037614", "+919600511722"])
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
 
-@click.command()
-@click.option("--dummy_device_imu", is_flag=True)
-@click.option("--dummy_device_gnss", is_flag=True)
-@click.option("--dummy_device_camera", is_flag=True)
-@click.option("--number_usb_camera", default=0, help="Number of UsbCamera")
-@click.option("--number_usb_serial", default=0, help="Number of UsbSerial")
-def main(dummy_device_imu, dummy_device_gnss, dummy_device_camera, number_usb_camera, number_usb_serial):
-    print("anx_mock assets:")
-    print(f"  dummy_device_imu: {'Present' if dummy_device_imu else 'Not present'}")
-    print(f"  dummy_device_gnss: {'Present' if dummy_device_gnss else 'Not present'}")
-    print(f"  dummy_device_camera: {'Present' if dummy_device_camera else 'Not present'}")
-    print(f"  number_usb_camera: {number_usb_camera}")
-    print(f"  number_usb_serial: {number_usb_serial}")
+    def shutdown(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "Shutting down!!"
 
-    anx_mock = AnxMock(dummy_device_imu, dummy_device_gnss, dummy_device_camera, number_usb_camera, number_usb_serial)
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
 
+    def reboot(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "Rebooting!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def tts(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "tts request received"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def get_available_languages(self, req_bytes):
+        rep = device_pb2.GetAvailableLanguagesResponse()
+        rep.languages.extend(['en', 'fr'])
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def is_tts_busy(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = False
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def set_wifi(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "wifi set!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+def main():
+    anx_mock = AnxMock()
     anx_mock.start()
 
 if __name__ == '__main__':
