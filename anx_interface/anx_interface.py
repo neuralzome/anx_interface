@@ -118,6 +118,15 @@ class AnxInterface:
     def listen_device_camera(self, cb=None):
         self.device_camera.start(cb=cb)
 
+    def stop_listening_device_imu(self):
+        self.device_imu.stop()
+
+    def stop_listening_device_gnss(self):
+        self.device_gnss.stop()
+
+    def stop_listening_device_camera(self):
+        self.device_camera.stop()
+
     def start_device_imu(self, fps, cb=None):
         if fps not in self.asset_state.imu.fps:
             return False
