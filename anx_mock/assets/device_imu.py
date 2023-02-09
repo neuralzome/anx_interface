@@ -19,8 +19,7 @@ class DeviceImu:
 
     def start(self, fps):
         if self.active:
-            if not self.stop():
-                return False
+            return False
 
         self.active = True
         self.fps = fps

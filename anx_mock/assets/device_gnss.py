@@ -18,8 +18,7 @@ class DeviceGnss:
 
     def start(self):
         if self.active:
-            if not self.stop():
-                return False
+            return False
 
         self.active = True
         self.socket.bind(f"tcp://127.0.0.1:{self.port}")

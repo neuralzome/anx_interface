@@ -38,6 +38,10 @@ class AnxInterface:
             print("Failed to init device state")
 
         self.asset_state = self.get_asset_state()
+
+        self.device_imu_started = False
+        self.device_gnss_started = False
+        self.device_camera_started = False
         self.device_imu = DeviceImu(self.executor)
         self.device_gnss = DeviceGnss(self.executor)
         self.device_camera = DeviceCamera(self.executor)
@@ -47,11 +51,23 @@ class AnxInterface:
 
     def signal_handler(self, sig, frame):
         if self.device_imu.active:
-            self.stop_device_imu()
+            if self.device_imu_started:
+                self.stop_device_imu()
+            else:
+                self.device_imu.stop()
+
         if self.device_gnss.active:
-            self.stop_device_gnss()
+            if self.device_gnss_started:
+                self.stop_device_gnss()
+            else:
+                self.device_gnss.stop()
+
         if self.device_camera.active:
-            self.stop_device_camera()
+            if self.device_camera_started:
+                self.stop_device_camera()
+            else:
+                self.device_camera.stop()
+
         self.terminated = True
 
     def wait(self):
@@ -93,6 +109,15 @@ class AnxInterface:
 
         return rep
 
+    def listen_device_imu(self, cb=None):
+        self.device_imu.start(cb=cb)
+
+    def listen_device_gnss(self, cb=None):
+        self.device_gnss.start(cb=cb)
+
+    def listen_device_camera(self, cb=None):
+        self.device_camera.start(cb=cb)
+
     def start_device_imu(self, fps, cb=None):
         if fps not in self.asset_state.imu.fps:
             return False
@@ -109,6 +134,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_imu_started = True
                 self.device_imu.start(cb=cb)
                 return True
 
@@ -129,6 +155,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_gnss_started = True
                 self.device_gnss.start(cb=cb)
                 return True
 
@@ -151,6 +178,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_camera_started = True
                 self.device_camera.start(cb=cb)
                 return True
 
@@ -168,6 +196,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_imu_started = False
                 self.device_imu.stop()
                 return True
 
@@ -185,6 +214,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_gnss_started = False
                 self.device_gnss.stop()
                 return True
 
@@ -202,6 +232,7 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep.ParseFromString(rep_bytes)
             if rep.success:
+                self.device_camera_started = False
                 self.device_camera.stop()
                 return True
 

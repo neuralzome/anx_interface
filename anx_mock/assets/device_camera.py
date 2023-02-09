@@ -24,8 +24,7 @@ class DeviceCamera:
 
     def start(self, fps, width, height, pixel_format):
         if self.active:
-            if not self.stop():
-                return False
+            return False
 
         self.active = True
         self.frame_index = 0
