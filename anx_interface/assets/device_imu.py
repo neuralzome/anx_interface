@@ -5,49 +5,49 @@ from anx_interface.proto import assets_pb2, device_pb2, common_pb2
 
 class DeviceImu:
     def __init__(self, executor):
-        self.executor = executor
+        self._executor = executor
 
-        self.ctx = zmq.Context()
+        self._ctx = zmq.Context()
 
-        self.socket = self.ctx.socket(zmq.SUB)
-        self.poller = zmq.Poller()
+        self._socket = self._ctx.socket(zmq.SUB)
+        self._poller = zmq.Poller()
 
-        self.port = 10003
-        self.cb = None
+        self._port = 10003
+        self._cb = None
         self.data = None
-        self.active = False
+        self._active = False
 
-    def start(self, cb=None):
-        if self.active:
+    def _start(self, cb=None):
+        if self._active:
             return False
 
-        self.active = True
-        self.cb = cb
-        self.socket.connect(f"tcp://127.0.0.1:{self.port}")
-        self.socket.setsockopt_string(zmq.SUBSCRIBE, "")
-        self.poller.register(self.socket, zmq.POLLIN)
+        self._active = True
+        self._cb = cb
+        self._socket.connect(f"tcp://127.0.0.1:{self._port}")
+        self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._poller.register(self._socket, zmq.POLLIN)
 
-        self.executor.submit(self.data_thread)
+        self._executor.submit(self._data_thread)
         return True
 
-    def stop(self):
-        if not self.active:
+    def _stop(self):
+        if not self._active:
             return True
 
-        self.active = False
-        self.socket.disconnect(f"tcp://127.0.0.1:{self.port}")
-        self.poller.unregister(self.socket)
-        self.cb = None
+        self._active = False
+        self._socket.disconnect(f"tcp://127.0.0.1:{self._port}")
+        self._poller.unregister(self._socket)
+        self._cb = None
         self.data = None
         return True
 
-    def data_thread(self):
-        while self.active:
-            events = self.poller.poll(100)
+    def _data_thread(self):
+        while self._active:
+            events = self._poller.poll(100)
             if events:
-                msg_bytes = self.socket.recv()
+                msg_bytes = self._socket.recv()
                 msg = assets_pb2.ImuData()
                 msg.ParseFromString(msg_bytes)
                 self.data = msg
-                if self.cb is not None:
-                    self.cb(self.data)
+                if self._cb is not None:
+                    self._cb(self.data)
