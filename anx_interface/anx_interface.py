@@ -128,6 +128,7 @@ class AnxInterface:
         self.device_camera._stop()
 
     def start_device_imu(self, fps, cb=None):
+        # Check if request is valid
         if fps not in self.asset_state.imu.fps:
             return False
 
@@ -150,6 +151,7 @@ class AnxInterface:
         return False
 
     def start_device_gnss(self, cb=None):
+        # Check if request is valid
         if not self.asset_state.gnss.available:
             return False
 
@@ -171,7 +173,15 @@ class AnxInterface:
         return False
 
     def start_device_camera(self, fps, width, height, pixel_format, cb=None):
-        # TODO: Check if request is valid
+        # Check if request is valid
+        is_valid = False
+        for camera_stream in self.asset_state.camera.camera_streams:
+            if fps == camera_stream.fps and width == camera_stream.width and height == camera_stream.height and pixel_format == camera_stream.pixel_format:
+                is_valid = True
+                break
+        if not is_valid:
+            return False
+
         req = assets_pb2.StartDeviceCamera()
         req.camera_stream.fps = fps
         req.camera_stream.width = width
