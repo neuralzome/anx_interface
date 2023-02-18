@@ -25,17 +25,17 @@ def build_proto():
 
     # Get compiler
     protoc = None
-    # if platform.uname().system == 'Linux':
-    #     if platform.uname().machine == 'x86_64':
-    #         protoc = "protoc-22.0-linux-x86_64"
-    #     elif platform.uname().machine == 'aarch':
-    #         protoc = "protoc-22.0-linux-aarch_64"
-    # elif platform.uname().system == 'Darwin':
-    #     if platform.uname().machine == 'arm64':
-    #         protoc = "protoc-22.0-osx-aarch_64"
+    if platform.uname().system == 'Linux':
+        if platform.uname().machine == 'x86_64':
+            protoc = "protoc-22.0-linux-x86_64"
+        elif platform.uname().machine == 'aarch64':
+            protoc = "protoc-22.0-linux-aarch_64"
+    elif platform.uname().system == 'Darwin':
+        if platform.uname().machine == 'arm64':
+            protoc = "protoc-22.0-osx-aarch_64"
 
     if protoc == None:
-        sys.exit("⚠️  No protoc found for your machine!!")
+        sys.exit("No protoc found for your machine!!")
 
     # Build protos
     for proto in protos:
