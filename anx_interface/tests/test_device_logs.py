@@ -2,13 +2,13 @@
 
 from anx_interface import Anx
 
-def device_state_cb(device_state):
-    print(device_state)
+def device_logs_cb(device_log):
+    print(device_log)
 
 def main():
     anx = Anx()
 
-    anx.register_device_state_cb(device_state_cb)
+    anx.register_device_logs_cb(device_logs_cb)
 
     anx.wait()
 

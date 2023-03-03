@@ -20,22 +20,19 @@ class AnxInterface:
         self._ctx = zmq.Context()
 
         self._socket_rpc = self._ctx.socket(zmq.REQ)
-        self._socket_rpc.connect('tcp://127.0.0.1:10002')
+        self._socket_rpc.connect("ipc:///ipc/device_rpc")
         self._poller_rpc = zmq.Poller()
         self._poller_rpc.register(self._socket_rpc, zmq.POLLIN)
 
-        self._socket_device_state = self._ctx.socket(zmq.SUB)
-        self._socket_device_state.connect("tcp://127.0.0.1:10001")
-        self._socket_device_state.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._poller_device_state = zmq.Poller()
-        self._poller_device_state.register(self._socket_device_state, zmq.POLLIN)
+        self._socket_device_logs = self._ctx.socket(zmq.SUB)
+        self._socket_device_logs.connect("ipc:///ipc/device_logs")
+        self._socket_device_logs.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._poller_device_logs = zmq.Poller()
+        self._poller_device_logs.register(self._socket_device_logs, zmq.POLLIN)
 
-        self._device_state_cb = None
-        self.device_state = None
+        self._device_logs_cb = None
 
-        self._executor.submit(self._device_state_thread)
-        if not self._wait_until_device_state_init():
-            print("Failed to init device state")
+        self._executor.submit(self._device_logs_thread)
 
         self.asset_state = self._get_asset_state()
 
@@ -73,27 +70,18 @@ class AnxInterface:
     def wait(self):
         self._executor.shutdown(wait=True)
 
-    def _wait_until_device_state_init(self, timeout_sec=1.0):
-        time_start = time.monotonic()
-        while self.device_state is None:
-            time.sleep(0.1)
-            if time.monotonic() - time_start > timeout_sec:
-                return False
-        return True
+    def register_device_logs_cb(self, device_logs_cb):
+        self._device_logs_cb = device_logs_cb
 
-    def register_device_state_cb(self, device_state_cb):
-        self._device_state_cb = device_state_cb
-
-    def _device_state_thread(self):
+    def _device_logs_thread(self):
         while not self._terminated:
-            events = self._poller_device_state.poll(100)
+            events = self._poller_device_logs.poll(100)
             if events:
-                msg_bytes = self._socket_device_state.recv()
-                msg = device_pb2.DeviceState()
+                msg_bytes = self._socket_device_logs.recv()
+                msg = device_pb2.DeviceLog()
                 msg.ParseFromString(msg_bytes)
-                self.device_state = msg
-                if self._device_state_cb is not None:
-                    self._device_state_cb(msg)
+                if self._device_logs_cb is not None:
+                    self._device_logs_cb(msg)
 
     def _get_asset_state(self):
         req = common_pb2.Empty()
@@ -272,21 +260,6 @@ class AnxInterface:
         else:
             return []
 
-    def get_phone_numbers(self):
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"GetPhoneNumbers", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep_bytes = self._socket_rpc.recv()
-            rep = device_pb2.GetPhoneNumbersResponse()
-            rep.ParseFromString(rep_bytes)
-            return rep.phone_numbers
-        else:
-            return []
-
     def shutdown(self):
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
@@ -307,53 +280,6 @@ class AnxInterface:
         req_bytes = req.SerializeToString()
 
         self._socket_rpc.send_multipart([b"Reboot", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
-
-    def tts(self, msg, lang):
-        req = device_pb2.TtsRequest()
-        req.message = msg
-        req.language = lang
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"Tts", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
-
-    def get_available_languages(self):
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"GetAvailableLanguages", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = device_pb2.GetAvailableLanguagesResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.languages
-
-        return []
-
-    def is_tts_busy(self):
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"IsTtsBusy", req_bytes])
 
         events = self._poller_rpc.poll(2000)
         if events:

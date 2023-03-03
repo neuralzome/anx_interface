@@ -15,7 +15,6 @@ class DeviceCamera:
         self._socket = self._ctx.socket(zmq.SUB)
         self._poller = zmq.Poller()
 
-        self._port = 10005
         self._cb = None
         self.data = None
         self._active = False
@@ -26,7 +25,7 @@ class DeviceCamera:
 
         self._active = True
         self._cb = cb
-        self._socket.connect(f"tcp://127.0.0.1:{self._port}")
+        self._socket.connect("ipc:///ipc/device_camera")
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._poller.register(self._socket, zmq.POLLIN)
 
@@ -38,7 +37,7 @@ class DeviceCamera:
             return True
 
         self._active = False
-        self._socket.disconnect(f"tcp://127.0.0.1:{self._port}")
+        self._socket.disconnect("ipc:///ipc/device_camera")
         self._poller.unregister(self._socket)
         self._cb = None
         self.data = None
