@@ -17,7 +17,6 @@ class DeviceCamera:
         self.width = None
         self.height = None
         self.pixel_format = None
-        self.port = 10005
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
@@ -32,7 +31,7 @@ class DeviceCamera:
         self.width = width
         self.height = height
         self.pixel_format = pixel_format
-        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.bind("ipc:///ipc/device_camera")
 
         self.executor.submit(self.data_thread)
         print("\tdevice_camera started!!")
@@ -43,7 +42,7 @@ class DeviceCamera:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.unbind("ipc:///ipc/device_camera")
         self.frame_index = None
         self.fps = None
         self.width = None

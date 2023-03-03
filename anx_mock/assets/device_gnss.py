@@ -11,7 +11,6 @@ class DeviceGnss:
         self.executor = executor
         self.active = False
         self.fps = 1
-        self.port = 10004
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
@@ -21,7 +20,7 @@ class DeviceGnss:
             return False
 
         self.active = True
-        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.bind("ipc:///ipc/device_gnss")
 
         self.executor.submit(self.data_thread)
         print("\tdevice_gnss started!!")
@@ -32,7 +31,7 @@ class DeviceGnss:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.unbind("ipc:///ipc/device_gnss")
         print("\tdevice_gnss stopped!!")
         return True
 

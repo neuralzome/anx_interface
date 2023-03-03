@@ -21,12 +21,12 @@ class AnxMock:
         self.ctx = zmq.Context()
 
         self.socket_rpc = self.ctx.socket(zmq.REP)
-        self.socket_rpc.bind("tcp://127.0.0.1:10002")
+        self.socket_rpc.bind("ipc:///ipc/device_rpc")
         self.poller_rpc = zmq.Poller()
         self.poller_rpc.register(self.socket_rpc, zmq.POLLIN)
 
-        self.socket_pub_state = self.ctx.socket(zmq.PUB)
-        self.socket_pub_state.bind("tcp://127.0.0.1:10001")
+        self.socket_pub_logs = self.ctx.socket(zmq.PUB)
+        self.socket_pub_logs.bind("ipc:///ipc/device_logs")
 
         self.rpc = {
                 b"GetAssetState": self.get_asset_state,
@@ -37,12 +37,8 @@ class AnxMock:
                 b"StopDeviceGnss": self.stop_device_gnss,
                 b"StopDeviceCamera": self.stop_device_camera,
                 b"GetImeiNumbers": self.get_imei_numbers,
-                b"GetPhoneNumbers": self.get_phone_numbers,
                 b"Shutdown": self.shutdown,
                 b"Reboot": self.reboot,
-                b"Tts": self.tts,
-                b"GetAvailableLanguages": self.get_available_languages,
-                b"IsTtsBusy": self.is_tts_busy,
                 b"SetWifi": self.set_wifi
         }
 
@@ -57,7 +53,7 @@ class AnxMock:
 
         self.active = True
         self.executor.submit(self.rpc_handler)
-        self.executor.submit(self.pub_state)
+        self.executor.submit(self.pub_logs)
 
         spinner = Spinner('AnxMock running ')
         while self.active:
@@ -73,47 +69,20 @@ class AnxMock:
         self.device_camera.stop()
         print("\nAnxMock stopped running")
 
-    def pub_state(self):
-        msg = device_pb2.DeviceState()
-        GB = 1024*1024*1024
-        MB = 1024*102
-        msg.uptime_ms = 0
-        msg.ram.used=200*MB
-        msg.ram.total=4*GB
-        msg.storage.used=32*GB
-        msg.storage.total=128*GB
-        msg.vram.used=0
-        msg.vram.total=4*GB
-        msg.cpu.processor = "Qualcomm Kryo 385"
-        msg.cpu.architecture = "64bit"
-        msg.cpu.type = "ARM Cortex-A75"
-
-        freq = device_pb2.Freq()
-        M = 1000*1000
-        freq.minimum= 1000*M
-        freq.maximum= 2400*M
-        freq.current= 1500*M
-
-        msg.cpu.freqs.append(freq)
-        msg.gpu.renderer = "Qualcomm Adreno 630"
-
-        thermal = device_pb2.Thermal()
-        thermal.name = "cpu"
-        thermal.temp_degree_celsius = 62.4
-
-        msg.thermals.append(thermal)
-
-        msg.battery.charging = True
-        msg.battery.level_in_percentage = 62
-        msg.battery.current_mA = 253.2
-        msg.battery.voltage_mV = 3862.2
+    def pub_logs(self):
+        msg = device_pb2.DeviceLog()
+        msg.pid = 123
+        msg.tid = 321
+        msg.level = msg.Level.INFO
+        msg.tag = "anx_mock"
+        msg.msg = "Log ..."
 
         rate = Rate(10)
         while self.active:
-            msg.uptime_ms += 100
+            msg.timestamp = int((time.time() * 1000))
 
             msg_bytes = msg.SerializeToString()
-            self.socket_pub_state.send(msg_bytes)
+            self.socket_pub_logs.send(msg_bytes)
             rate.sleep()
 
     def rpc_handler(self):
@@ -193,12 +162,6 @@ class AnxMock:
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
 
-    def get_phone_numbers(self, req_bytes):
-        rep = device_pb2.GetPhoneNumbersResponse()
-        rep.phone_numbers.extend(["+917320037614", "+919600511722"])
-        rep_bytes = rep.SerializeToString()
-        self.socket_rpc.send(rep_bytes)
-
     def shutdown(self, req_bytes):
         rep = common_pb2.StdResponse()
         rep.success = True
@@ -211,28 +174,6 @@ class AnxMock:
         rep = common_pb2.StdResponse()
         rep.success = True
         rep.message = "Rebooting!!"
-
-        rep_bytes = rep.SerializeToString()
-        self.socket_rpc.send(rep_bytes)
-
-    def tts(self, req_bytes):
-        rep = common_pb2.StdResponse()
-        rep.success = True
-        rep.message = "tts request received"
-
-        rep_bytes = rep.SerializeToString()
-        self.socket_rpc.send(rep_bytes)
-
-    def get_available_languages(self, req_bytes):
-        rep = device_pb2.GetAvailableLanguagesResponse()
-        rep.languages.extend(['en', 'fr'])
-
-        rep_bytes = rep.SerializeToString()
-        self.socket_rpc.send(rep_bytes)
-
-    def is_tts_busy(self, req_bytes):
-        rep = common_pb2.StdResponse()
-        rep.success = False
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)

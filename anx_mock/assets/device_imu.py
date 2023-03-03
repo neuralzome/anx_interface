@@ -12,7 +12,6 @@ class DeviceImu:
         self.executor = executor
         self.active = False
         self.fps = None
-        self.port = 10003
 
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.PUB)
@@ -23,7 +22,7 @@ class DeviceImu:
 
         self.active = True
         self.fps = fps
-        self.socket.bind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.bind("ipc:///ipc/device_imu")
 
         self.executor.submit(self.data_thread)
         print("\tdevice_imu started!!")
@@ -34,7 +33,7 @@ class DeviceImu:
             return True
 
         self.active = False
-        self.socket.unbind(f"tcp://127.0.0.1:{self.port}")
+        self.socket.unbind("ipc:///ipc/device_imu")
         self.fps = None
         print("\tdevice_imu stopped!!")
         return True
