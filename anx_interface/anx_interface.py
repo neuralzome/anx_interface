@@ -290,6 +290,21 @@ class AnxInterface:
 
         return False
 
+    def restart_anx_service(self):
+        req = common_pb2.Empty()
+        req_bytes = req.SerializeToString()
+
+        self._socket_rpc.send_multipart([b"RestartAnxService", req_bytes])
+
+        events = self._poller_rpc.poll(2000)
+        if events:
+            rep = common_pb2.StdResponse()
+            rep_bytes = self._socket_rpc.recv()
+            rep.ParseFromString(rep_bytes)
+            return rep.success
+
+        return False
+
     def set_wifi(self, ssid, password):
         req = device_pb2.SetWifiRequest()
         req.ssid = ssid

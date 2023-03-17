@@ -39,7 +39,8 @@ class AnxMock:
                 b"GetImeiNumbers": self.get_imei_numbers,
                 b"Shutdown": self.shutdown,
                 b"Reboot": self.reboot,
-                b"SetWifi": self.set_wifi
+                b"SetWifi": self.set_wifi,
+                b"RestartAnxService": self.restart_anx_service
         }
 
         self.device_imu = DeviceImu(self.executor)
@@ -174,6 +175,14 @@ class AnxMock:
         rep = common_pb2.StdResponse()
         rep.success = True
         rep.message = "Rebooting!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def restart_anx_service(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "Restar initiated.."
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
