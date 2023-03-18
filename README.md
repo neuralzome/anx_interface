@@ -7,7 +7,7 @@ anx_mock (python) <--anx_api--> anx_interface (python) --> anx_interface_ros2
 **Purpose:** Development and testing of anx_interface, anx_interface_ros and anx_interface_ros2
 
 ## Installing
-**Note:** Install scons and poetry befor proceedings
+**Note:** Install [scons](https://scons.org/) and [poetry](https://python-poetry.org/) befor proceedings
 
 ```bash
 cd anx_interface
