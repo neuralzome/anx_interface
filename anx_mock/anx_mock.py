@@ -36,9 +36,11 @@ class AnxMock:
                 b"GetImeiNumbers": self.get_imei_numbers,
                 b"Shutdown": self.shutdown,
                 b"Reboot": self.reboot,
+                b"RestartAnxService": self.restart_anx_service,
                 b"SetWifi": self.set_wifi,
                 b"SetHotspot": self.set_hotspot,
-                b"RestartAnxService": self.restart_anx_service
+                b"StartAndroidLogs": self.start_android_logs,
+                b"StopAndroidLogs": self.stop_android_logs
         }
 
         self.device_imu = DeviceImu(self.executor)
@@ -180,6 +182,22 @@ class AnxMock:
         rep = common_pb2.StdResponse()
         rep.success = True
         rep.message = "hotspot set!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def start_android_logs(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "Started android logs!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def stop_android_logs(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "Stopped android logs!!"
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
