@@ -13,5 +13,5 @@ anx_mock (python) <--anx_api--> anx_interface (python) --> anx_interface_ros2
 cd anx_interface
 scons
 poetry build
-pip install dist/anx_interface-<version>
+pip install dist/anx_interface-<version>-py3-none-any.whl
 ```
