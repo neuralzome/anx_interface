@@ -37,6 +37,7 @@ class AnxMock:
                 b"Shutdown": self.shutdown,
                 b"Reboot": self.reboot,
                 b"SetWifi": self.set_wifi,
+                b"SetHotspot": self.set_hotspot,
                 b"RestartAnxService": self.restart_anx_service
         }
 
@@ -171,6 +172,14 @@ class AnxMock:
         rep = common_pb2.StdResponse()
         rep.success = True
         rep.message = "wifi set!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def set_hotspot(self, req_bytes):
+        rep = common_pb2.StdResponse()
+        rep.success = True
+        rep.message = "hotspot set!!"
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)

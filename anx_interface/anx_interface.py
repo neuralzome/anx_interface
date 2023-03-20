@@ -298,3 +298,20 @@ class AnxInterface:
             return rep.success
 
         return False
+
+    def set_hotspot(self, ssid, password):
+        req = device_pb2.SetWifiRequest()
+        req.ssid = ssid
+        req.password = password
+        req_bytes = req.SerializeToString()
+
+        self._socket_rpc.send_multipart([b"SetHotspot", req_bytes])
+
+        events = self._poller_rpc.poll(2000)
+        if events:
+            rep = common_pb2.StdResponse()
+            rep_bytes = self._socket_rpc.recv()
+            rep.ParseFromString(rep_bytes)
+            return rep.success
+
+        return False
