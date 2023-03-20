@@ -24,16 +24,6 @@ class AnxInterface:
         self._poller_rpc = zmq.Poller()
         self._poller_rpc.register(self._socket_rpc, zmq.POLLIN)
 
-        self._socket_device_logs = self._ctx.socket(zmq.SUB)
-        self._socket_device_logs.connect("ipc:///ipc/device_logs")
-        self._socket_device_logs.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._poller_device_logs = zmq.Poller()
-        self._poller_device_logs.register(self._socket_device_logs, zmq.POLLIN)
-
-        self._device_logs_cb = None
-
-        self._executor.submit(self._device_logs_thread)
-
         self.asset_state = self._get_asset_state()
 
         self._device_imu_started = False
@@ -69,19 +59,6 @@ class AnxInterface:
 
     def wait(self):
         self._executor.shutdown(wait=True)
-
-    def register_device_logs_cb(self, device_logs_cb):
-        self._device_logs_cb = device_logs_cb
-
-    def _device_logs_thread(self):
-        while not self._terminated:
-            events = self._poller_device_logs.poll(100)
-            if events:
-                msg_bytes = self._socket_device_logs.recv()
-                msg = device_pb2.DeviceLog()
-                msg.ParseFromString(msg_bytes)
-                if self._device_logs_cb is not None:
-                    self._device_logs_cb(msg)
 
     def _get_asset_state(self):
         req = common_pb2.Empty()

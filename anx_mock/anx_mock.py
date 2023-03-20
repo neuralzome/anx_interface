@@ -25,9 +25,6 @@ class AnxMock:
         self.poller_rpc = zmq.Poller()
         self.poller_rpc.register(self.socket_rpc, zmq.POLLIN)
 
-        self.socket_pub_logs = self.ctx.socket(zmq.PUB)
-        self.socket_pub_logs.bind("ipc:///ipc/device_logs")
-
         self.rpc = {
                 b"GetAssetState": self.get_asset_state,
                 b"StartDeviceImu": self.start_device_imu,
@@ -54,7 +51,6 @@ class AnxMock:
 
         self.active = True
         self.executor.submit(self.rpc_handler)
-        self.executor.submit(self.pub_logs)
 
         spinner = Spinner('AnxMock running ')
         while self.active:
@@ -69,22 +65,6 @@ class AnxMock:
         self.device_gnss.stop()
         self.device_camera.stop()
         print("\nAnxMock stopped running")
-
-    def pub_logs(self):
-        msg = device_pb2.DeviceLog()
-        msg.pid = 123
-        msg.tid = 321
-        msg.level = msg.Level.INFO
-        msg.tag = "anx_mock"
-        msg.msg = "Log ..."
-
-        rate = Rate(10)
-        while self.active:
-            msg.timestamp = int((time.time() * 1000))
-
-            msg_bytes = msg.SerializeToString()
-            self.socket_pub_logs.send(msg_bytes)
-            rate.sleep()
 
     def rpc_handler(self):
         while self.active:
