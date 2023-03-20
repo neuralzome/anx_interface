@@ -316,6 +316,36 @@ class AnxInterface:
 
         return False
 
+    def get_floos_version(self):
+        req = common_pb2.Empty()
+        req_bytes = req.SerializeToString()
+
+        self._socket_rpc.send_multipart([b"GetFloOsVersion", req_bytes])
+
+        events = self._poller_rpc.poll(2000)
+        if events:
+            rep = device_pb2.VersionResponse()
+            rep_bytes = self._socket_rpc.recv()
+            rep.ParseFromString(rep_bytes)
+            return rep.version
+
+        return None
+
+    def get_anx_version(self):
+        req = common_pb2.Empty()
+        req_bytes = req.SerializeToString()
+
+        self._socket_rpc.send_multipart([b"GetAnxVersion", req_bytes])
+
+        events = self._poller_rpc.poll(2000)
+        if events:
+            rep = device_pb2.VersionResponse()
+            rep_bytes = self._socket_rpc.recv()
+            rep.ParseFromString(rep_bytes)
+            return rep.version
+
+        return None
+
     def start_android_logs(self):
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()

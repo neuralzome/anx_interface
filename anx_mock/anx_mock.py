@@ -39,6 +39,8 @@ class AnxMock:
                 b"RestartAnxService": self.restart_anx_service,
                 b"SetWifi": self.set_wifi,
                 b"SetHotspot": self.set_hotspot,
+                b"GetFloOsVersion": self.get_floos_version,
+                b"GetAnxVersion": self.get_anx_version,
                 b"StartAndroidLogs": self.start_android_logs,
                 b"StopAndroidLogs": self.stop_android_logs
         }
@@ -182,6 +184,20 @@ class AnxMock:
         rep = common_pb2.StdResponse()
         rep.success = True
         rep.message = "hotspot set!!"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def get_floos_version(self, req_bytes):
+        rep = device_pb2.VersionResponse()
+        rep.version = "0.1.0"
+
+        rep_bytes = rep.SerializeToString()
+        self.socket_rpc.send(rep_bytes)
+
+    def get_anx_version(self, req_bytes):
+        rep = device_pb2.VersionResponse()
+        rep.version = "0.1.0"
 
         rep_bytes = rep.SerializeToString()
         self.socket_rpc.send(rep_bytes)
