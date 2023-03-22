@@ -3,8 +3,6 @@
 import click
 from anx_interface import Anx
 
-anx = None
-
 @click.command(name="device_gnss_config")
 def get_gnss_config():
     print(f"{anx.asset_state.gnss}")
@@ -17,9 +15,9 @@ def get_imu_config():
 def get_camera_config():
     print(f"{anx.asset_state.camera}")
 
-@click.command(name="imei_number")
-def get_imei_number():
-    print(f"{anx.get_imei_number()}")
+@click.command(name="imei_numbers")
+def get_imei_numbers():
+    print(f"{anx.get_imei_numbers()}")
 
 @click.command(name="shutdown")
 def shutdown():
@@ -43,12 +41,15 @@ def get_floos_version():
 def cli():
     pass
 
+anx = None
+
 def main():
+    global anx
     anx = Anx()
     cli.add_command(get_gnss_config)
     cli.add_command(get_imu_config)
     cli.add_command(get_camera_config)
-    cli.add_command(get_imei_number)
+    cli.add_command(get_imei_numbers)
     cli.add_command(shutdown)
     cli.add_command(reboot)
     cli.add_command(get_anx_version)
