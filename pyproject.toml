@@ -22,6 +22,8 @@ pillow = "^9.4.0"
 protobuf = "4.22.0"
 psutil = "^5.9.4"
 
+[tool.poetry.scripts]
+anx = "anx_interface.tools.anx:main"
 
 [build-system]
 requires = ["poetry-core"]
