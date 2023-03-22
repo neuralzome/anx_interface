@@ -6,7 +6,9 @@ from progress.spinner import PixelSpinner as Spinner
 import zmq
 
 from anx_mock.utils import Rate
-from anx_mock.proto import assets_pb2, common_pb2, device_pb2
+import anx_proto.python.assets_pb2 as assets_pb2
+import anx_proto.python.device_pb2 as device_pb2
+import anx_proto.python.common_pb2 as common_pb2
 from anx_mock.assets.device_imu import DeviceImu
 from anx_mock.assets.device_gnss import DeviceGnss
 from anx_mock.assets.device_camera import DeviceCamera

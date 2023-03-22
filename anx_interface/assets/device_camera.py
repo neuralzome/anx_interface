@@ -4,7 +4,10 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from PIL import Image
 import zmq
-from anx_interface.proto import assets_pb2, device_pb2, common_pb2
+
+import anx_proto.python.assets_pb2 as assets_pb2
+import anx_proto.python.device_pb2 as device_pb2
+import anx_proto.python.common_pb2 as common_pb2
 
 class DeviceCamera:
     def __init__(self, executor):

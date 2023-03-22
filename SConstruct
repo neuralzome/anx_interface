@@ -5,19 +5,19 @@ import platform
 
 def build_proto():
     # Build and source paths
-    build_dir = 'build'
+    build_dir = 'anx_proto'
     proto_src_dir = 'api_docs/anx'
 
     # Clean build dir
-    python_proto_build_dir = os.path.join(build_dir, "proto", "python")
+    python_proto_build_dir = os.path.join(build_dir, "python")
     if os.path.exists(python_proto_build_dir):
         shutil.rmtree(python_proto_build_dir)
-    cpp_proto_build_dir = os.path.join(build_dir, "proto", "cpp")
+    cpp_proto_build_dir = os.path.join(build_dir, "cpp")
     if os.path.exists(cpp_proto_build_dir):
         shutil.rmtree(cpp_proto_build_dir)
 
-    os.makedirs(os.path.join(build_dir, "proto", "python"))
-    os.makedirs(os.path.join(build_dir, "proto", "cpp"))
+    os.makedirs(os.path.join(build_dir, "python"))
+    os.makedirs(os.path.join(build_dir, "cpp"))
 
     # List of proto files
     protos = [file for file in os.listdir(proto_src_dir) if file.split('.')[-1] == "proto"]
@@ -39,16 +39,17 @@ def build_proto():
 
     # Build protos
     for proto in protos:
-        os.system(f"./third_party/protoc/{protoc} --proto_path={proto_src_dir} --python_out={build_dir}/proto/python --cpp_out={build_dir}/proto/cpp {proto}")
+        os.system(f"./third_party/protoc/{protoc} --proto_path={proto_src_dir} --python_out={build_dir}/python --cpp_out={build_dir}/cpp {proto}")
 
     # Add __init__.py
-    fd = open(os.path.join(build_dir, "proto", "python", "__init__.py"), "w")
+    fd = open(os.path.join(build_dir, "python", "__init__.py"), "w")
+    fd = open(os.path.join(build_dir, "__init__.py"), "w")
     fd.close()
 
     # Replace import with from . import
     protos_pb2 = [f"{proto.split('.')[0]}_pb2" for proto in protos]
     for file in protos_pb2:
-        fd = open(os.path.join(build_dir, "proto", "python", file + ".py") , "r")
+        fd = open(os.path.join(build_dir, "python", file + ".py") , "r")
         lines = fd.read().splitlines()
         for line_no, line in enumerate(lines):
             words = line.split(' ')
@@ -58,16 +59,9 @@ def build_proto():
                     line = ' '.join(words)
                     lines[line_no] = line
         fd.close()
-        fd = open(os.path.join(build_dir, "proto", "python", file + ".py"), "w")
+        fd = open(os.path.join(build_dir, "python", file + ".py"), "w")
         fd.write("\n".join(lines))
         fd.close()
-
-    # Create symlink
-    proto_symlink_paths = ["./anx_interface/proto", "./anx_mock/proto"]
-    for proto_symlink_path in proto_symlink_paths:
-        if os.path.exists(proto_symlink_path):
-            os.remove(proto_symlink_path)
-        os.symlink(f"../{build_dir}/proto/python", proto_symlink_path)
 
 # Main
 build_proto()

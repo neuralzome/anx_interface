@@ -4,7 +4,8 @@ from enum import Enum
 import numpy as np
 import zmq
 
-from anx_interface.proto import common_pb2, model_pb2
+import anx_proto.python.common_pb2 as common_pb2
+import anx_proto.python.model_pb2 as model_pb2
 
 tflite_numpy_dtype_map = {
     1: np.float32,

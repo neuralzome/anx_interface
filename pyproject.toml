@@ -7,7 +7,8 @@ readme = "README.md"
 packages = [
   {include = "anx_interface"},
   {include = "anx_mock"},
-  {include = "anx_logging"}
+  {include = "anx_logging"},
+  {include = "anx_proto"}
 ]
 
 [tool.poetry.dependencies]

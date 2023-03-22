@@ -5,7 +5,10 @@ import signal
 from concurrent.futures import ThreadPoolExecutor
 
 import zmq
-from anx_interface.proto import assets_pb2, device_pb2, common_pb2
+
+import anx_proto.python.assets_pb2 as assets_pb2
+import anx_proto.python.device_pb2 as device_pb2
+import anx_proto.python.common_pb2 as common_pb2
 from anx_interface.assets.device_imu import DeviceImu
 from anx_interface.assets.device_gnss import DeviceGnss
 from anx_interface.assets.device_camera import DeviceCamera

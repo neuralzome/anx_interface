@@ -3,7 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
 import zmq
-from anx_mock.proto import assets_pb2
+import anx_proto.python.assets_pb2 as assets_pb2
 from anx_mock.utils import Rate
 
 class DeviceGnss:
