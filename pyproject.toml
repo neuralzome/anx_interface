@@ -4,6 +4,7 @@ version = "0.5.0"
 description = "Implements anx_api"
 authors = ["Aditya Shriwastava <aditya@flomobility.com>"]
 readme = "README.md"
+include = ["anx_proto/python/*", "anx_proto/*"]
 packages = [
   {include = "anx_interface"},
   {include = "anx_mock"},
