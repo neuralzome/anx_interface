@@ -37,6 +37,7 @@ class AnxInterface:
         self.device_camera = DeviceCamera(self._executor)
 
     def ok(self):
+        """Return True if anx_interface is active"""
         return not self._terminated
 
     def _signal_handler(self, sig, frame):
@@ -61,6 +62,7 @@ class AnxInterface:
         self._terminated = True
 
     def wait(self):
+        """Waits until everything exist cleanly"""
         self._executor.shutdown(wait=True)
 
     def _get_asset_state(self):
@@ -78,24 +80,50 @@ class AnxInterface:
         return rep
 
     def listen_device_imu(self, cb=None):
+        """
+        Listen to device_imu data stream, which has already been started
+        Arguments:
+            cb -- function which receives data events
+        """
         self.device_imu._start(cb=cb)
 
     def listen_device_gnss(self, cb=None):
+        """
+        Listen to device_gnss data stream, which has already been started
+        Arguments:
+            cb -- function which receives data events
+        """
         self.device_gnss._start(cb=cb)
 
     def listen_device_camera(self, cb=None):
+        """
+        Listen to device_camera data stream, which has already been started
+        Arguments:
+            cb -- function which receives data events
+        """
         self.device_camera._start(cb=cb)
 
     def stop_listening_device_imu(self):
+        """Stop listening to device_imu stream"""
         self.device_imu._stop()
 
     def stop_listening_device_gnss(self):
+        """Stop listening to device_gnss stream"""
         self.device_gnss._stop()
 
     def stop_listening_device_camera(self):
+        """Stop listening to device_camera stream"""
         self.device_camera._stop()
 
     def start_device_imu(self, fps, cb=None):
+        """
+        Start streaming device_imu
+        Arguments:
+            fps -- select supported fps (check asset_state)
+            cb -- function which receives data events
+        Returns:
+            True if successful
+        """
         # Check if request is valid
         if fps not in self.asset_state.imu.fps:
             return False
@@ -119,6 +147,13 @@ class AnxInterface:
         return False
 
     def start_device_gnss(self, cb=None):
+        """
+        Start streaming device_gnss
+        Arguments:
+            cb -- function which receives data events
+        Returns:
+            True if successful
+        """
         # Check if request is valid
         if not self.asset_state.gnss.available:
             return False
@@ -141,6 +176,17 @@ class AnxInterface:
         return False
 
     def start_device_camera(self, fps, width, height, pixel_format, cb=None):
+        """
+        Start streaming device_camera
+        Arguments:
+            fps -- select supported pixel_format (check asset_state)
+            width -- select supported pixel_format (check asset_state)
+            height -- select supported pixel_format (check asset_state)
+            pixel_format -- select supported pixel_format (check asset_state)
+            cb -- function which receives data events
+        Returns:
+            True if successful
+        """
         # Check if request is valid
         is_valid = False
         for camera_stream in self.asset_state.camera.camera_streams:
@@ -172,6 +218,11 @@ class AnxInterface:
         return False
 
     def stop_device_imu(self):
+        """
+        Stop streaming device_imu
+        Returns:
+            True if successful
+        """
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -190,6 +241,11 @@ class AnxInterface:
         return False
 
     def stop_device_gnss(self):
+        """
+        Stop streaming device_gnss
+        Returns:
+            True if successful
+        """
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -208,6 +264,11 @@ class AnxInterface:
         return False
 
     def stop_device_camera(self):
+        """
+        Stop streaming device_camera
+        Returns:
+            True if successful
+        """
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -226,6 +287,7 @@ class AnxInterface:
         return False
 
     def get_imei_numbers(self):
+        """returns list of IMEI numbers in order of sim slot"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -241,6 +303,7 @@ class AnxInterface:
             return []
 
     def shutdown(self):
+        """Shutdowns the device"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -256,6 +319,7 @@ class AnxInterface:
         return False
 
     def reboot(self):
+        """Reboots the device"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -271,6 +335,7 @@ class AnxInterface:
         return False
 
     def restart_anx_service(self):
+        """Restart anx service which is responsible for all the rpc and sensor streams"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -286,6 +351,14 @@ class AnxInterface:
         return False
 
     def set_wifi(self, ssid, password):
+        """
+        Set the wifi network the device should connect to
+        Arguments:
+            ssid -- ssid of the wifi network
+            password -- password of the wifi network
+        Returns:
+            True if successful
+        """
         req = device_pb2.SetWifiRequest()
         req.ssid = ssid
         req.password = password
@@ -303,6 +376,14 @@ class AnxInterface:
         return False
 
     def set_hotspot(self, ssid, password):
+        """
+        Set device hotspot ssid and password
+        Arguments:
+            ssid -- ssid of the hotspot
+            password -- password of the hotspot
+        Returns:
+            True if successful
+        """
         req = device_pb2.SetWifiRequest()
         req.ssid = ssid
         req.password = password
@@ -320,6 +401,7 @@ class AnxInterface:
         return False
 
     def get_floos_version(self):
+        """Return flo os version"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -335,6 +417,7 @@ class AnxInterface:
         return None
 
     def get_anx_version(self):
+        """Return anx version"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -350,6 +433,7 @@ class AnxInterface:
         return None
 
     def start_android_logs(self):
+        """Starts logging logs in /logs/system"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 
@@ -365,6 +449,7 @@ class AnxInterface:
         return False
 
     def stop_android_logs(self):
+        """Stops logging"""
         req = common_pb2.Empty()
         req_bytes = req.SerializeToString()
 

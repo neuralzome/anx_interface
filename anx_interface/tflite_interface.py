@@ -27,6 +27,10 @@ class DeviceType(Enum):
 
 class TfliteInterface:
     def __init__(self, device_type):
+        """
+        Arguments:
+            device_type -- select from DeviceType enum
+        """
         self.ctx = zmq.Context()
         self.socket = self.ctx.socket(zmq.REQ)
 
@@ -52,6 +56,13 @@ class TfliteInterface:
         self.output = None
 
     def load_model(self, path_to_model):
+        """
+        load tflite model
+        Arguments:
+            path_to_model -- path to the tflite model
+        Returns:
+            True if successful
+        """
 
         with open(path_to_model, mode="rb") as model_fd:
             self.model = model_fd.read()
@@ -84,6 +95,11 @@ class TfliteInterface:
         return False
 
     def unload_model(self):
+        """
+        unload model
+        Returns:
+            True if successful
+        """
         request = common_pb2.Empty()
         request_bytes = request.SerializeToString()
         self.socket.send_multipart([b"UnloadGpuModel", request_bytes])
@@ -110,6 +126,13 @@ class TfliteInterface:
         return False
 
     def set_input(self, input):
+        """
+        set input to the model
+        Arguments:
+            input -- numpy array of shape and type as acceptable by tflite model
+        Returns:
+            True if successful
+        """
         if not self.model_loaded:
             print("Load model first!!")
             return False
@@ -126,6 +149,12 @@ class TfliteInterface:
         return True
 
     def invoke(self):
+        """
+        invoke the model
+        Returns:
+            True if successful
+        """
+
         if not self.model_loaded:
             print("Load model first!!")
             return False
@@ -143,8 +172,14 @@ class TfliteInterface:
 
             self.output = np.frombuffer(rep.payload, dtype=self.output_dtype)
             self.output = self.output.reshape(self.output_shape)
+            return True
+        return False
 
     def get_output(self):
+        """
+        Returns:
+            model output as numpy array 
+        """
         if not self.model_loaded:
             print("Load model first!!")
             return None
