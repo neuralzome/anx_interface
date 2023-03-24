@@ -5,3 +5,4 @@ __pycache__
 anx_proto
 *.sconsign.dblite
 dist
+.DS_store

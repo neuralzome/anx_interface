@@ -33,9 +33,9 @@ def build_proto():
             protoc = f"protoc-{protoc_version}-linux-aarch_64"
     elif platform.uname().system == 'Darwin':
         if platform.uname().machine == 'x86_64':
-            protoc = "protoc-{protoc_version}-osx-x86_64"
-        elif platform.uname().machine == 'aarch64':
-            protoc = "protoc-{protoc_version}-osx-aarch_64"
+            protoc = f"protoc-{protoc_version}-osx-x86_64"
+        elif platform.uname().machine in ['arm64','aarch64'] :
+            protoc = f"protoc-{protoc_version}-osx-aarch_64"
 
     if protoc == None:
         sys.exit("No protoc found for your machine!!")
