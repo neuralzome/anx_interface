@@ -5,6 +5,18 @@ import time
 import numpy as np
 from anx_interface import Anx
 
+class HzObserver:
+    def __init__(self, N):
+        self.N = N
+        self.timestamps = []
+
+    def ping(self):
+        if len(self.timestamps) == N:
+            self.timestamps.pop(0)
+            self.push(time.time())
+            hz = N / (self.timestamps[-1] - self.timestamps[0])
+            return hz
+        return 0
 
 @click.command(name="gnss_config")
 def get_gnss_config():
@@ -23,7 +35,7 @@ def get_imu_config():
     print(f"{anx.asset_state.imu}")
 
 def imu_cb(imu_date):
-    print(imu_date)
+    print(f"[hz = {hz_obseerver.ping()}] {imu_date}")
 
 @click.command(name="stream_imu")
 @click.option("--fps", default=10, help="IMU fps")
@@ -36,7 +48,7 @@ def get_camera_config():
     print(f"{anx.asset_state.camera}")
 
 def camera_cb(camera_date):
-    print(f"[{time.time()}] {camera_data.shape}")
+    print(f"[hz = {hz_obseerver.ping()}] {camera_date.shape}")
 
 @click.command(name="stream_camera")
 @click.option("--fps", default=30, help="camera fps")
@@ -109,10 +121,13 @@ def cli():
     pass
 
 anx = None
+hz_obseerver = None
 
 def main():
     global anx
     anx = Anx()
+    global hz_obseerver
+    hz_obseerver = HzObserver(10)
     cli.add_command(get_gnss_config)
     cli.add_command(stream_gnss)
     cli.add_command(get_imu_config)
