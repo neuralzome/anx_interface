@@ -11,19 +11,19 @@ class HzObserver:
         self.timestamps = []
 
     def ping(self):
-        if len(self.timestamps) == N:
+        self.timestamps.append(time.time())
+        if len(self.timestamps) > self.N:
             self.timestamps.pop(0)
-            self.push(time.time())
-            hz = N / (self.timestamps[-1] - self.timestamps[0])
+            hz = (self.N - 1) / (self.timestamps[-1] - self.timestamps[0])
             return hz
-        return 0
+        return -1
 
 @click.command(name="gnss_config")
 def get_gnss_config():
     print(f"{anx.asset_state.gnss}")
 
-def gnss_cb(gnss_date):
-    print(gnss_date)
+def gnss_cb(gnss_data):
+    print(f"[{time.time()}] {gnss_data}")
 
 @click.command(name="stream_gnss")
 def stream_gnss():
@@ -34,8 +34,9 @@ def stream_gnss():
 def get_imu_config():
     print(f"{anx.asset_state.imu}")
 
-def imu_cb(imu_date):
-    print(f"[hz = {hz_obseerver.ping()}] {imu_date}")
+def imu_cb(imu_data):
+    # print(imu_data)
+    print(f"[hz = {hz_observer.ping()}]\n{imu_data}")
 
 @click.command(name="stream_imu")
 @click.option("--fps", default=10, help="IMU fps")
@@ -47,8 +48,8 @@ def stream_imu(fps):
 def get_camera_config():
     print(f"{anx.asset_state.camera}")
 
-def camera_cb(camera_date):
-    print(f"[hz = {hz_obseerver.ping()}] {camera_date.shape}")
+def camera_cb(camera_data):
+    print(f"[hz = {hz_observer.ping()}] {camera_data.shape}")
 
 @click.command(name="stream_camera")
 @click.option("--fps", default=30, help="camera fps")
@@ -121,13 +122,13 @@ def cli():
     pass
 
 anx = None
-hz_obseerver = None
+# hz_observer = None
 
 def main():
     global anx
     anx = Anx()
-    global hz_obseerver
-    hz_obseerver = HzObserver(10)
+    global hz_observer
+    hz_observer = HzObserver(10)
     cli.add_command(get_gnss_config)
     cli.add_command(stream_gnss)
     cli.add_command(get_imu_config)
