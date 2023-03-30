@@ -22,7 +22,7 @@ class PerfLogger:
                 "cpu3-gold-usr": "thermal_zone1"
         }
 
-        self.filepath = "/logs/perflogs/"
+        self.filepath = "/root/.logs/"
         self.filename = f"{datetime.now().strftime('%d-%m-%Y-%H-%M-%S')}.csv"
 
         self.ok = True
