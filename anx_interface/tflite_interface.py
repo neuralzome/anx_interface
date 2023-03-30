@@ -69,7 +69,7 @@ class TfliteInterface:
             request = common_pb2.Payload()
             request.payload = self.model
             request_bytes = request.SerializeToString()
-            self.socket.send_multipart([b"LoadGpuModel", request_bytes])
+            self.socket.send_multipart([b"LoadModel", request_bytes])
 
             events = self.poller.poll(2000)
             if events:
@@ -102,7 +102,7 @@ class TfliteInterface:
         """
         request = common_pb2.Empty()
         request_bytes = request.SerializeToString()
-        self.socket.send_multipart([b"UnloadGpuModel", request_bytes])
+        self.socket.send_multipart([b"UnloadModel", request_bytes])
 
         events = self.poller.poll(2000)
         if events:
@@ -162,7 +162,7 @@ class TfliteInterface:
         req = common_pb2.Payload()
         req.payload = self.input.tobytes()
         req_bytes = req.SerializeToString()
-        self.socket.send_multipart([b"InvockGpuModel", req_bytes])
+        self.socket.send_multipart([b"InvokeModel", req_bytes])
 
         events = self.poller.poll(2000)
         if events:
