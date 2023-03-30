@@ -71,7 +71,7 @@ class TfliteInterface:
             request_bytes = request.SerializeToString()
             self.socket.send_multipart([b"LoadModel", request_bytes])
 
-            events = self.poller.poll(2000)
+            events = self.poller.poll(10000)
             if events:
                 model_meta_rep = model_pb2.ModelMeta()
                 std_rep = common_pb2.StdResponse()
@@ -164,7 +164,7 @@ class TfliteInterface:
         req_bytes = req.SerializeToString()
         self.socket.send_multipart([b"InvokeModel", req_bytes])
 
-        events = self.poller.poll(2000)
+        events = self.poller.poll(5000)
         if events:
             rep = common_pb2.Payload()
             rep_bytes = self.socket.recv()
