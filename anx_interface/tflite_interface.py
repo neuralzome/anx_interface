@@ -25,6 +25,12 @@ class DeviceType(Enum):
     GPU = 2
     DSP = 3
 
+class Tensor():
+    def __init__(self):
+        self.tensor = None
+        self.shape = None
+        self.dtype = None
+
 class TfliteInterface:
     def __init__(self, device_type):
         """
@@ -47,13 +53,9 @@ class TfliteInterface:
         self.model_loaded = False
         self.model = None
 
-        self.input = None
-        self.input_shape = None
-        self.input_dtype = None
+        self.input_tensors = []
 
-        self.output_shape = None
-        self.output_dtype = None
-        self.output = None
+        self.output_tensors = []
 
     def load_model(self, path_to_model):
         """
@@ -82,13 +84,18 @@ class TfliteInterface:
                     model_meta_rep.ParseFromString(model_meta_rep_bytes)
 
                     # Populate input/output shape & dtype
-                    self.input_shape = tuple(model_meta_rep.input_dims)
-                    self.input_dtype = tflite_numpy_dtype_map[model_meta_rep.input_dtype]
-                    print(f"Input shape: {self.input_shape}, input_dtype: {self.input_dtype}")
+                    for index, input_tensor in enumerate(model_meta_rep.input_tensors):
+                        self.input_tensors.append(Tensor())
+                        self.input_tensors[-1].shape = tuple(input_tensor.dims)
+                        self.input_tensors[-1].dtype = tflite_numpy_dtype_map[input_tensor.dtype]
+                        print(f"Input{index} shape: {self.input_tensors[-1].dims}, dtype: {self.input_tensors[-1].dtype}")
 
-                    self.output_shape = tuple(model_meta_rep.output_dims)
-                    self.output_dtype = tflite_numpy_dtype_map[model_meta_rep.output_dtype]
-                    print(f"Output shape: {self.output_shape}, output_dtype: {self.output_dtype}")
+                    for index, output_tensor in enumerate(model_meta_rep.output_tensors):
+                        self.output_tensors.append(Tensor())
+                        self.output_tensors[-1].shape = tuple(output_tensor.dims)
+                        self.output_tensors[-1].dtype = tflite_numpy_dtype_map[output_tensor.dtype]
+                        print(f"Input{index} shape: {self.output_tensors[-1].dims}, dtype: {self.output_tensors[-1].dtype}")
+
                     return True
                 else:
                     print(std_rep.message)
@@ -113,23 +120,19 @@ class TfliteInterface:
                 self.model_loaded = False
                 self.model = None
 
-                self.input = None
-                self.input_shape = None
-                self.input_dtype = None
+                self.input_tensor = []
 
-                self.output_shape = None
-                self.output_dtype = None
-                self.output = None
+                self.output_tensor = []
                 return True
             else:
                 print(rep.message)
         return False
 
-    def set_input(self, input):
+    def set_inputs(self, inputs):
         """
-        set input to the model
+        set inputs to the model
         Arguments:
-            input -- numpy array of shape and type as acceptable by tflite model
+            inputs -- list of numpy array of shape and type as acceptable by tflite model
         Returns:
             True if successful
         """
@@ -137,15 +140,22 @@ class TfliteInterface:
             print("Load model first!!")
             return False
 
-        if not input.shape == self.input_shape:
-            print(f"Input shape should be {self.input_shape}")
+        # Check if input length is equal to self.input_sensor len
+        if not len(inputs) == len(self.input_tensors):
+            print("Expected inputs of length {len(self.input_tensors)}, but got {len(inputs)}")
             return False
 
-        if not input.dtype == self.input_dtype:
-            print(f"Input dtype should be {self.input_dtype}")
-            return False
+        for index, input_ in enumerate(inputs):
+            if not input_.shape == self.input_tensors[index].shape:
+                print(f"Input{index} shape should be {self.input_tensor.shape}")
+                return False
 
-        self.input = input
+            if not input_.dtype == self.input_tensors[index].dtype:
+                print(f"Input{index} dtype should be {self.input_tensor.dtype}")
+                return False
+
+            self.input_tensors[index].tensor = input_
+
         return True
 
     def invoke(self):
@@ -159,19 +169,21 @@ class TfliteInterface:
             print("Load model first!!")
             return False
 
-        req = common_pb2.Payload()
-        req.payload = self.input.tobytes()
+        req = common_pb2.PayloadArray()
+        for input_tensor in self.input_tensors:
+            req.payloads.append(input_tensor.tensor.tobytes())
         req_bytes = req.SerializeToString()
         self.socket.send_multipart([b"InvokeModel", req_bytes])
 
         events = self.poller.poll(5000)
         if events:
-            rep = common_pb2.Payload()
+            rep = common_pb2.PayloadArray()
             rep_bytes = self.socket.recv()
             rep.ParseFromString(rep_bytes)
-
-            self.output = np.frombuffer(rep.payload, dtype=self.output_dtype)
-            self.output = self.output.reshape(self.output_shape)
+            
+            for index, payload in enumerate(rep.payloads):
+                self.output_tensors[index].tensor = np.frombuffer(payload, dtype=self.output_tensors[index].dtype)
+                self.output_tensors[index].tensor = self.output_tensors[index].reshape(self.output_tensor[index].shape)
             return True
         return False
 
@@ -183,4 +195,4 @@ class TfliteInterface:
         if not self.model_loaded:
             print("Load model first!!")
             return None
-        return self.output
+        return [output_tensor.tensor for output_tensor in self.output_tensors]
