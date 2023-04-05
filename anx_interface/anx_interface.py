@@ -350,15 +350,21 @@ class AnxInterface:
 
         return False
 
-    def set_wifi(self, ssid, password):
+    def set_wifi(self, ssid, password) -> tuple[bool, str]:
         """
         Set the wifi network the device should connect to
         Arguments:
             ssid -- ssid of the wifi network
+
             password -- password of the wifi network
         Returns:
-            True if successful
+            True if successful.
+            
+            False and a message otherwise
         """
+        if ssid == "" or password == "":
+            return (False, "Received empty ssid/password.")
+
         req = device_pb2.SetWifiRequest()
         req.ssid = ssid
         req.password = password
@@ -371,19 +377,31 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep_bytes = self._socket_rpc.recv()
             rep.ParseFromString(rep_bytes)
-            return rep.success
+            return (rep.success, rep.message)
 
-        return False
+        return (False, "SetHotspot rpc called timed out")
 
-    def set_hotspot(self, ssid, password):
+    def set_hotspot(self, ssid, password) -> tuple[bool, str]:
         """
         Set device hotspot ssid and password
+        
+        Note : Minimum length of password is 10 characters
+        
         Arguments:
             ssid -- ssid of the hotspot
+            
             password -- password of the hotspot
         Returns:
-            True if successful
+            True if successful.
+            
+            False and a message otherwise
         """
+        if ssid == "" or password == "":
+            return (False, "Received empty ssid/password.")
+
+        if len(password) < 10:
+            return (False, f"Password should have minimum length of 10. Received {len(password)}")
+
         req = device_pb2.SetWifiRequest()
         req.ssid = ssid
         req.password = password
@@ -396,9 +414,9 @@ class AnxInterface:
             rep = common_pb2.StdResponse()
             rep_bytes = self._socket_rpc.recv()
             rep.ParseFromString(rep_bytes)
-            return rep.success
+            return (rep.success, rep.message)
 
-        return False
+        return (False, "SetHotspot rpc called timed out")
 
     def get_floos_version(self):
         """Return flo os version"""

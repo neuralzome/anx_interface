@@ -86,18 +86,24 @@ def restart_anx_service():
         print("Restarting anx service")
 
 @click.command(name="set_wifi")
-@click.argument("SSID")
-@click.argument("PASSWORD")
-def set_wifi(SSID, PASSWORD):
-    if anx.set_wifi(SSID, PASSWORD):
-        print("Setting Wifi")
+@click.argument("ssid")
+@click.argument("password")
+def set_wifi(ssid, password):
+    status, msg = anx.set_wifi(ssid, password)
+    if status:
+        print("Setting Wifi. Check in a couple of seconds")
+    else:
+        print(f"Error in setting wifi : {msg}")
 
 @click.command(name="set_hotspot")
-@click.argument("SSID")
-@click.argument("PASSWORD")
-def set_hotspot(SSID, PASSWORD):
-    if anx.set_hotspot(SSID, PASSWORD):
-        print("Setting hotspot")
+@click.argument("ssid")
+@click.argument("password")
+def set_hotspot(ssid, password):
+    status, msg = anx.set_hotspot(ssid, password)
+    if status:
+        print("Setting hotspot. Check in a few seconds")
+    else:
+        print(f"Error in setting hotspot : {msg}")
 
 @click.command(name="anx_version")
 def get_anx_version():
