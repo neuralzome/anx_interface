@@ -88,13 +88,13 @@ class TfliteInterface:
                         self.input_tensors.append(Tensor())
                         self.input_tensors[-1].shape = tuple(input_tensor.dims)
                         self.input_tensors[-1].dtype = tflite_numpy_dtype_map[input_tensor.dtype]
-                        print(f"Input{index} shape: {self.input_tensors[-1].dims}, dtype: {self.input_tensors[-1].dtype}")
+                        print(f"Input{index} shape: {self.input_tensors[-1].shape}, dtype: {self.input_tensors[-1].dtype}")
 
                     for index, output_tensor in enumerate(model_meta_rep.output_tensors):
                         self.output_tensors.append(Tensor())
                         self.output_tensors[-1].shape = tuple(output_tensor.dims)
                         self.output_tensors[-1].dtype = tflite_numpy_dtype_map[output_tensor.dtype]
-                        print(f"Input{index} shape: {self.output_tensors[-1].dims}, dtype: {self.output_tensors[-1].dtype}")
+                        print(f"Output{index} shape: {self.output_tensors[-1].shape}, dtype: {self.output_tensors[-1].dtype}")
 
                     return True
                 else:
@@ -183,7 +183,7 @@ class TfliteInterface:
             
             for index, payload in enumerate(rep.payloads):
                 self.output_tensors[index].tensor = np.frombuffer(payload, dtype=self.output_tensors[index].dtype)
-                self.output_tensors[index].tensor = self.output_tensors[index].reshape(self.output_tensor[index].shape)
+                self.output_tensors[index].tensor = self.output_tensors[index].tensor.reshape(self.output_tensors[index].shape)
             return True
         return False
 
