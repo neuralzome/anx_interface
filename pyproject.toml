@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "anx-interface"
-version = "0.5.0"
+version = "0.5.1"
 description = "Implements anx_api"
 authors = ["Aditya Shriwastava <aditya@flomobility.com>"]
 readme = "README.md"
