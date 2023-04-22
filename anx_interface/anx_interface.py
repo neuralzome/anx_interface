@@ -12,6 +12,7 @@ import anx_proto.python.common_pb2 as common_pb2
 from anx_interface.assets.device_imu import DeviceImu
 from anx_interface.assets.device_gnss import DeviceGnss
 from anx_interface.assets.device_camera import DeviceCamera
+from anx_interface.utils.fifo import FiFo, parse_msg
 
 class AnxInterface:
     def __init__(self):
@@ -28,6 +29,8 @@ class AnxInterface:
         self._poller_rpc.register(self._socket_rpc, zmq.POLLIN)
 
         self.asset_state = self._get_asset_state()
+
+        self._fifo = FiFo("/dev/socket/anx_in", "/dev/socket/anx_out")
 
         self._device_imu_started = False
         self._device_gnss_started = False
@@ -304,51 +307,19 @@ class AnxInterface:
 
     def shutdown(self):
         """Shutdowns the device"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"Shutdown", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
+        response = self._fifo.send_msg("Shutdown")
+        return parse_msg(response)
 
     def reboot(self):
         """Reboots the device"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"Reboot", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
+        response = self._fifo.send_msg("Reboot")
+        return parse_msg(response)
 
     def restart_anx_service(self):
         """Restart anx service which is responsible for all the rpc and sensor streams"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"RestartAnxService", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
+        response = self._fifo.send_msg("RestartAnxService")
+        return parse_msg(response)
+    
 
     def set_wifi(self, ssid, password) -> tuple[bool, str]:
         """
@@ -420,19 +391,8 @@ class AnxInterface:
 
     def get_floos_version(self):
         """Return flo os version"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"GetFloOsVersion", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = device_pb2.VersionResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.version
-
-        return None
+        response = self._fifo.send_msg("GetFloOsVersion")
+        return parse_msg(response)
 
     def get_anx_version(self):
         """Return anx version"""
@@ -451,33 +411,11 @@ class AnxInterface:
         return None
 
     def start_android_logs(self):
-        """Starts logging logs in /logs/system"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"StartAndroidLogs", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
+        """Starts logging logs in /.logs/system"""
+        response = self._fifo.send_msg("StartAndroidLogs")
+        return parse_msg(response)
 
     def stop_android_logs(self):
         """Stops logging"""
-        req = common_pb2.Empty()
-        req_bytes = req.SerializeToString()
-
-        self._socket_rpc.send_multipart([b"StopAndroidLogs", req_bytes])
-
-        events = self._poller_rpc.poll(2000)
-        if events:
-            rep = common_pb2.StdResponse()
-            rep_bytes = self._socket_rpc.recv()
-            rep.ParseFromString(rep_bytes)
-            return rep.success
-
-        return False
+        response = self._fifo.send_msg("StopAndroidLogs")
+        return parse_msg(response)

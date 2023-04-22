@@ -72,18 +72,27 @@ def get_imei_numbers():
 
 @click.command(name="shutdown")
 def shutdown():
-    print("Shutting down!!")
-    anx.shutdown()
+    response = anx.shutdown()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in shutting down : {response[1]}")
 
 @click.command(name="reboot")
 def reboot():
-    print("Rebooting!!")
-    anx.reboot()
+    response = anx.reboot()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in rebooting : {response[1]}")
 
 @click.command(name="restart_anx_service")
 def restart_anx_service():
-    if anx.restart_anx_service():
-        print("Restarting anx service")
+    response = anx.restart_anx_service()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in restarting anx service : {response[1]}")
 
 @click.command(name="set_wifi")
 @click.argument("ssid")
@@ -111,17 +120,27 @@ def get_anx_version():
 
 @click.command(name="floos_version")
 def get_floos_version():
-    print(f"{anx.get_floos_version()}")
+    response = anx.get_floos_version()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in getting flo os version : {response[1]}")
 
 @click.command(name="start_android_logs")
 def start_android_logs():
-    if anx.start_android_logs():
-        print(f"started android logs!")
+    response = anx.start_android_logs()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in starting logs : {response[1]}")
 
 @click.command(name="stop_android_logs")
 def stop_android_logs():
-    if anx.stop_android_logs():
-        print(f"stopped android logs!")
+    response = anx.stop_android_logs()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in stopping logs : {response[1]}")
 
 @click.group()
 def cli():
