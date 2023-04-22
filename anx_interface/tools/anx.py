@@ -142,6 +142,39 @@ def stop_android_logs():
     else:
         print(f"Error in stopping logs : {response[1]}")
 
+@click.command(name="wifi_stats")
+def wifi_stats():
+    response = anx.get_wifi_stats()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in getting wifi stats : {response[1]}")
+
+@click.command(name="hotspot_stats")
+def hotspot_stats():
+    response = anx.get_hotspot_stats()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in getting hotspot stats : {response[1]}")
+
+@click.command(name="cellular_stats")
+def cellular_stats():
+    response = anx.get_cellular_stats()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in getting cellular stats : {response[1]}")
+
+@click.command(name="reset_fs")
+def reset_fs():
+    response = anx.get_cellular_stats()
+    if response[0]:
+        print(response[1])
+    else:
+        print(f"Error in resettig file system : {response[1]}")
+
+
 @click.group()
 def cli():
     pass
@@ -170,4 +203,8 @@ def main():
     cli.add_command(get_floos_version)
     cli.add_command(start_android_logs)
     cli.add_command(stop_android_logs)
+    cli.add_command(wifi_stats)
+    cli.add_command(hotspot_stats)
+    cli.add_command(cellular_stats)
+    cli.add_command(reset_fs)
     cli()

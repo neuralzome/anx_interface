@@ -419,3 +419,19 @@ class AnxInterface:
         """Stops logging"""
         response = self._fifo.send_msg("StopAndroidLogs")
         return parse_msg(response)
+    
+    def get_wifi_stats(self):
+        response = self._fifo.send_msg("GetWifiStats")
+        return parse_msg(response)
+
+    def get_hotspot_stats(self):
+        response = self._fifo.send_msg("GetHotspotStats")
+        return parse_msg(response)
+
+    def get_cellular_stats(self):
+        response = self._fifo.send_msg("GetCellularStats")
+        return parse_msg(response)
+    
+    def reset_fs(self):
+        response = self._fifo.send_msg("ResetFs")
+        return parse_msg(response)
