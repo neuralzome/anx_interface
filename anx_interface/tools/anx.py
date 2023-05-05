@@ -20,10 +20,12 @@ class HzObserver:
 
 @click.command(name="gnss_config")
 def get_gnss_config():
-    print(f"{anx.asset_state.gnss}")
+    data = f"{anx.asset_state.gnss}"
+    print(f"{data.rstrip()}")
 
 def gnss_cb(gnss_data):
-    print(f"[{time.time()}] {gnss_data}")
+    data = f"{gnss_data}"
+    print(f"[{time.time()}] {data.rstrip()}")
 
 @click.command(name="stream_gnss")
 def stream_gnss():
@@ -32,11 +34,12 @@ def stream_gnss():
 
 @click.command(name="imu_config")
 def get_imu_config():
-    print(f"{anx.asset_state.imu}")
+    data = f"{anx.asset_state.imu}"
+    print(f"{data.rstrip()}")
 
 def imu_cb(imu_data):
-    # print(imu_data)
-    print(f"[hz = {hz_observer.ping()}]\n{imu_data}")
+    data = f"{imu_data}"
+    print(f"[hz = {hz_observer.ping()}]\n{data.rstrip()}")
 
 @click.command(name="stream_imu")
 @click.option("--fps", default=10, help="IMU fps")
@@ -46,7 +49,8 @@ def stream_imu(fps):
 
 @click.command(name="camera_config")
 def get_camera_config():
-    print(f"{anx.asset_state.camera}")
+    data = f"{anx.asset_state.camera}"
+    print(f"{data.rstrip()}")
 
 def camera_cb(camera_data):
     print(f"[hz = {hz_observer.ping()}] {camera_data.shape}")
@@ -168,7 +172,7 @@ def cellular_stats():
 
 @click.command(name="reset_fs")
 def reset_fs():
-    response = anx.get_cellular_stats()
+    response = anx.reset_fs()
     if response[0]:
         print(response[1])
     else:

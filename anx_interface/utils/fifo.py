@@ -14,7 +14,7 @@ class FiFo:
                 read_data = fifo_out.read()
                 # reached EOF
                 if len(read_data) == 0:
-                    return data
+                    return data.rstrip()
                 data = read_data
 
 def parse_msg(msg: str):

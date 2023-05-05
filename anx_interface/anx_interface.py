@@ -430,7 +430,7 @@ class AnxInterface:
 
     def get_cellular_stats(self):
         response = self._fifo.send_msg("GetCellularStats")
-        return parse_msg(response)
+        return response
     
     def reset_fs(self):
         response = self._fifo.send_msg("ResetFs")
