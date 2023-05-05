@@ -2,7 +2,7 @@
 name = "anx-interface"
 version = "0.5.2"
 description = "Implements anx_api"
-authors = ["Aditya Shriwastava <aditya@flomobility.com>"]
+authors = ["Aditya Shriwastava <aditya@flomobility.com>", "Clay Motupalli <clay@flomobility.com>"]
 readme = "README.md"
 include = ["anx_proto/python/*", "anx_proto/*"]
 packages = [
