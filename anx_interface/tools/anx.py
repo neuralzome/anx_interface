@@ -72,7 +72,8 @@ def stream_camera(fps, width, height, pixel_format):
 
 @click.command(name="imei_numbers")
 def get_imei_numbers():
-    print(f"{anx.get_imei_numbers()}")
+    data = f"{anx.get_imei_numbers()}"
+    print(f"{data.rstrip()}")
 
 @click.command(name="shutdown")
 def shutdown():
@@ -120,7 +121,8 @@ def set_hotspot(ssid, password):
 
 @click.command(name="anx_version")
 def get_anx_version():
-    print(f"{anx.get_anx_version()}")
+    data = f"{anx.get_anx_version()}"
+    print(f"{data.rstrip()}")
 
 @click.command(name="floos_version")
 def get_floos_version():
@@ -165,10 +167,7 @@ def hotspot_stats():
 @click.command(name="cellular_stats")
 def cellular_stats():
     response = anx.get_cellular_stats()
-    if response[0]:
-        print(response[1])
-    else:
-        print(f"Error in getting cellular stats : {response[1]}")
+    print(f"{response}")
 
 @click.command(name="reset_fs")
 def reset_fs():
