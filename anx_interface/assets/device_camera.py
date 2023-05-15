@@ -21,6 +21,20 @@ class DeviceCamera:
         self._cb = None
         self.data = None
         self._active = False
+        self._is_read = False
+
+    def read(self):
+        """
+        Works just like opencv's VideoCapture read
+
+        Returns:
+            True, data if a new frame is available
+
+        """
+        if self.data is None or self._is_read:
+            return False, None
+        self._is_read = True
+        return True, self.data.copy()
 
     def _start(self, cb=None):
         if self._active:
@@ -54,6 +68,7 @@ class DeviceCamera:
                 msg = assets_pb2.CameraData()
                 msg.ParseFromString(msg_bytes)
                 self.data = np.array(Image.open(BytesIO(msg.image)))
+                self._is_read = False
                 if self._cb is not None:
                     self._cb(self.data)
 
