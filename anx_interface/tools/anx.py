@@ -4,6 +4,7 @@ import click
 import time
 import numpy as np
 from anx_interface import Anx
+from anx_logging import PerfLogger
 
 class HzObserver:
     def __init__(self, N):
@@ -177,19 +178,25 @@ def reset_fs():
     else:
         print(f"Error in resettig file system : {response[1]}")
 
+@click.command(name="perf_logger")
+def perf_logger():
+    perflogger = PerfLogger()
+    perflogger.logger_thread()
 
 @click.group()
 def cli():
     pass
 
 anx = None
-# hz_observer = None
+hz_observer = None
 
 def main():
     global anx
     anx = Anx()
+
     global hz_observer
     hz_observer = HzObserver(10)
+
     cli.add_command(get_gnss_config)
     cli.add_command(stream_gnss)
     cli.add_command(get_imu_config)
@@ -210,4 +217,5 @@ def main():
     cli.add_command(hotspot_stats)
     cli.add_command(cellular_stats)
     cli.add_command(reset_fs)
+    cli.add_command(perf_logger)
     cli()
