@@ -120,9 +120,9 @@ class TfliteInterface:
                 self.model_loaded = False
                 self.model = None
 
-                self.input_tensor = []
+                self.input_tensors = []
 
-                self.output_tensor = []
+                self.output_tensors = []
                 return True
             else:
                 print(rep.message)
@@ -147,11 +147,11 @@ class TfliteInterface:
 
         for index, input_ in enumerate(inputs):
             if not input_.shape == self.input_tensors[index].shape:
-                print(f"Input{index} shape should be {self.input_tensor.shape}")
+                print(f"Input{index} shape should be {self.input_tensors.shape}")
                 return False
 
             if not input_.dtype == self.input_tensors[index].dtype:
-                print(f"Input{index} dtype should be {self.input_tensor.dtype}")
+                print(f"Input{index} dtype should be {self.input_tensors.dtype}")
                 return False
 
             self.input_tensors[index].tensor = input_
