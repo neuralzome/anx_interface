@@ -15,7 +15,7 @@ class HzObserver:
         if len(self.timestamps) > self.N:
             self.timestamps.pop(0)
             hz = (self.N - 1) / (self.timestamps[-1] - self.timestamps[0])
-            return hz
+            return round(hz)
         return -1
 
 @click.command(name="gnss_config")
@@ -106,6 +106,14 @@ def set_wifi(ssid, password):
     status, msg = anx.set_wifi(ssid, password)
     if status:
         print("Setting Wifi. Check in a couple of seconds")
+    else:
+        print(f"Error in setting wifi : {msg}")
+
+@click.command(name="disconnect_wifi")
+def disconnect_wifi():
+    status, msg = anx.disconnect_wifi()
+    if status:
+        print(msg)
     else:
         print(f"Error in setting wifi : {msg}")
 
@@ -201,6 +209,7 @@ def main():
     cli.add_command(reboot)
     cli.add_command(restart_anx_service)
     cli.add_command(set_wifi)
+    cli.add_command(disconnect_wifi)
     cli.add_command(set_hotspot)
     cli.add_command(get_anx_version)
     cli.add_command(get_floos_version)
