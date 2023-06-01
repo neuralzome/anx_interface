@@ -420,6 +420,10 @@ class AnxInterface:
         response = self._fifo.send_msg("StopAndroidLogs")
         return parse_msg(response)
     
+    def connect_wifi(self):
+        response = self._fifo.send_msg("ConnectWifi")
+        return parse_msg(response)
+
     def disconnect_wifi(self):
         response = self._fifo.send_msg("DisconnectWifi")
         return parse_msg(response)

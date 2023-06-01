@@ -109,6 +109,14 @@ def set_wifi(ssid, password):
     else:
         print(f"Error in setting wifi : {msg}")
 
+@click.command(name="connect_wifi")
+def connect_wifi():
+    status, msg = anx.connect_wifi()
+    if status:
+        print(msg)
+    else:
+        print(f"Error in setting wifi : {msg}")
+
 @click.command(name="disconnect_wifi")
 def disconnect_wifi():
     status, msg = anx.disconnect_wifi()
@@ -209,6 +217,7 @@ def main():
     cli.add_command(reboot)
     cli.add_command(restart_anx_service)
     cli.add_command(set_wifi)
+    cli.add_command(connect_wifi)
     cli.add_command(disconnect_wifi)
     cli.add_command(set_hotspot)
     cli.add_command(get_anx_version)
