@@ -105,7 +105,7 @@ def restart_anx_service():
 def set_wifi(ssid, password):
     status, msg = anx.set_wifi(ssid, password)
     if status:
-        print("Setting Wifi. Check in a couple of seconds")
+        print("Setting Wifi. Run anx connect_wifi")
     else:
         print(f"Error in setting wifi : {msg}")
 
