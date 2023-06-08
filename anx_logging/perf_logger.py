@@ -11,16 +11,7 @@ class PerfLogger:
     def __init__(self):
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.thermal_zones = {
-                "cpu0-silver-usr": "thermal_zone11",
-                "cpu1-silver-usr": "thermal_zone22",
-                "cpu2-silver-usr": "thermal_zone33",
-                "cpu3-silver-usr": "thermal_zone44",
-                "cpu0-gold-usr": "thermal_zone71",
-                "cpu1-gold-usr": "thermal_zone72",
-                "cpu2-gold-usr": "thermal_zone73",
-                "cpu3-gold-usr": "thermal_zone1"
-        }
+        self.thermal_zones = {}
 
         self.filepath = "/root/.logs/"
         self.filename = f"{datetime.now().strftime('%d-%m-%Y-%H-%M-%S')}.csv"
@@ -36,6 +27,7 @@ class PerfLogger:
         self.I = 0
 
         self.init_logfile()
+        self._populate_thermal_zones()
 
     def signal_handler(self, sig, frame):
         self.ok = False
@@ -122,6 +114,13 @@ class PerfLogger:
     def read(self, path):
         with open(path, 'r') as fd:
             return fd.read().strip()
+        
+    def _populate_thermal_zones(self):
+        for thermal_zone in os.listdir("/sys/devices/virtual/thermal"):
+            if not thermal_zone.startswith("thermal_zone"):
+                continue
+            with open(os.path.join("/sys/devices/virtual/thermal", thermal_zone, "type")) as f:
+                self.thermal_zones[f.read().strip()] = thermal_zone
 
 def main():
     perflogger = PerfLogger()
