@@ -67,7 +67,7 @@ class DeviceCamera:
                 msg_bytes = self._socket.recv()
                 msg = assets_pb2.CameraData()
                 msg.ParseFromString(msg_bytes)
-                self.data = np.array(Image.open(BytesIO(msg.image)))
+                self.data = np.array(Image.open(BytesIO(msg.image)).rotate(180))
                 self._is_read = False
                 if self._cb is not None:
                     self._cb(self.data)
