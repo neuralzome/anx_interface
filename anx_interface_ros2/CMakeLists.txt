@@ -15,6 +15,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
     anx_interface_ros2/imu_driver.py
     anx_interface_ros2/gnss_driver.py
+    anx_interface_ros2/camera_driver.py
     DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
