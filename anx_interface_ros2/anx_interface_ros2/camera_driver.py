@@ -5,6 +5,7 @@ import threading
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
+from cv_bridge import CvBridge
 
 from anx_interface import Anx
 
@@ -13,6 +14,7 @@ class CameraDriver(Node):
         super().__init__("camera_driver")
 
         self.anx = Anx()
+        self.bridge = CvBridge()
 
         # publishers
         self.compressed_img_pub = self.create_publisher(
@@ -34,6 +36,14 @@ class CameraDriver(Node):
 
         self.running = False
         self.display_thread = None
+
+    def start(self):
+        self.start_stream(
+            width=self.width,
+            height=self.height,
+            fps=self.fps,
+            pixel_format=self.pixel_format
+        )
         
     def start_stream(self, width, height, fps, pixel_format):
         self.anx.start_device_camera(fps=fps, width=width, height=height, pixel_format=pixel_format)
@@ -46,12 +56,9 @@ class CameraDriver(Node):
             ret, img = self.anx.device_camera.read() 
             if not ret: 
                 continue 
-            compressed_img_msg = CompressedImage()
-            compressed_img_msg.header.frame_id = "device_camera"
-            compressed_img_msg.header.stamp = self.get_clock().now().to_msg()
 
-            compressed_img_msg.format = "jpeg"
-            compressed_img_msg.data = img
+            compressed_img_msg = self.bridge.cv2_to_compressed_imgmsg(img)
+            compressed_img_msg.header.frame_id = "device_camera"
 
             self.compressed_img_pub.publish(compressed_img_msg)
 
@@ -63,7 +70,7 @@ class CameraDriver(Node):
 def main(args=None): 
     rclpy.init(args=args)
     camera_driver = CameraDriver()
-    camera_driver.start_stream(fps=30, width=640, height=480, pixel_format=0)
+    camera_driver.start()
     camera_driver.wait()
 
 if __name__ == "__main__": 
