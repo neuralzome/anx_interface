@@ -321,7 +321,7 @@ class AnxInterface:
         return parse_msg(response)
     
 
-    def set_wifi(self, ssid, password) -> tuple[bool, str]:
+    def set_wifi(self, ssid, password):
         """
         Set the wifi network the device should connect to
         Arguments:
@@ -352,7 +352,7 @@ class AnxInterface:
 
         return (False, "SetHotspot rpc called timed out")
 
-    def set_hotspot(self, ssid, password) -> tuple[bool, str]:
+    def set_hotspot(self, ssid, password):
         """
         Set device hotspot ssid and password
         
